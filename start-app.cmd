@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal EnableExtensions
 title Your Notes - Engineering Knowledge Vault (http://localhost:3000)
 
 cd /d "%~dp0"
@@ -10,18 +10,18 @@ echo ========================================================
 echo.
 
 where npm >nul 2>nul
-if %ERRORLEVEL% neq 0 (
+if errorlevel 1 (
     echo [ERROR] Node.js and npm were not found in your PATH.
     echo Please install Node.js LTS from https://nodejs.org/ and try again.
     pause
     exit /b 1
 )
 
-if not exist "node_modules\" (
-    echo [INFO] Installing dependencies for first-time setup...
-    call npm install
-    if %ERRORLEVEL% neq 0 (
-        echo [ERROR] npm install failed.
+if not exist "node_modules\.bin\tsx.cmd" (
+    echo [INFO] Installing dependencies...
+    call npm install --legacy-peer-deps
+    if errorlevel 1 (
+        echo [ERROR] npm install failed. Please check the output above.
         pause
         exit /b 1
     )

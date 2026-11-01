@@ -13,9 +13,9 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ ! -d "node_modules" ]; then
-  echo "[INFO] Installing dependencies for first-time setup..."
-  npm install
+if [ ! -f "node_modules/.bin/tsx" ]; then
+  echo "[INFO] Installing dependencies..."
+  npm install --legacy-peer-deps
 fi
 
 (
