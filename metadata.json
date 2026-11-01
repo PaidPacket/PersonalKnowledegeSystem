@@ -1,0 +1,6 @@
+{
+  "name": "Your Notes — Engineering Knowledge Vault",
+  "description": "Local-first Markdown knowledge base, bidirectional wiki-link graph, spatial canvas, and engineering vault workspace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

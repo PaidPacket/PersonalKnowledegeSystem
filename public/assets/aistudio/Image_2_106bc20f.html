@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"tertiary-container":"#ca8100","surface-container-highest":"#2d3449","secondary-fixed-dim":"#4edea3","surface":"#0b1326","primary":"#c0c1ff","on-surface":"#dae2fd","on-secondary-fixed":"#002113","surface-container-high":"#222a3d","surface-dim":"#0b1326","tertiary-fixed":"#ffddb8","inverse-primary":"#494bd6","surface-container-lowest":"#060e20","surface-variant":"#2d3449","surface-bright":"#31394d","background":"#0b1326","secondary-container":"#00a572","surface-container-low":"#131b2e","on-primary-fixed-variant":"#2f2ebe","on-tertiary":"#472a00","on-tertiary-fixed":"#2a1700","surface-container":"#171f33","primary-container":"#8083ff","error":"#ffb4ab","on-tertiary-container":"#3e2400","tertiary-fixed-dim":"#ffb95f","outline-variant":"#464554","on-secondary-container":"#00311f","on-secondary-fixed-variant":"#005236","inverse-on-surface":"#283044","on-error-container":"#ffdad6","primary-fixed-dim":"#c0c1ff","on-primary-fixed":"#07006c","error-container":"#93000a","secondary-fixed":"#6ffbbe","on-background":"#dae2fd","tertiary":"#ffb95f","secondary":"#4edea3","primary-fixed":"#e1e0ff","inverse-surface":"#dae2fd","on-primary":"#1000a9","outline":"#908fa0","on-primary-container":"#0d0096","on-surface-variant":"#c7c4d7","on-error":"#690005","on-secondary":"#003824","surface-tint":"#c0c1ff","on-tertiary-fixed-variant":"#653e00"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"gutter":"0.75rem","space-md":"0.75rem","space-lg":"1.25rem","gutter-desktop":"1rem","margin":"0.75rem","space-sm":"0.375rem","space-xl":"2rem","space-xs":"0.25rem","margin-desktop":"1.5rem"},"fontFamily":{"body-md":["Inter"],"headline-sm":["Inter"],"body-lg":["Inter"],"label-md":["Inter"],"headline-md":["Inter"],"headline-xl":["Inter"],"code-block":["JetBrains Mono"],"headline-lg":["Inter"],"code-inline":["JetBrains Mono"],"label-sm":["Inter"],"body-sm":["Inter"]},"fontSize":{"body-md":["0.9375rem",{"lineHeight":"1.625rem","fontWeight":"400"}],"headline-sm":["1.125rem",{"lineHeight":"1.5rem","letterSpacing":"-0.005em","fontWeight":"500"}],"body-lg":["1rem",{"lineHeight":"1.75rem","letterSpacing":"-0.005em","fontWeight":"400"}],"label-md":["0.8125rem",{"lineHeight":"1.125rem","letterSpacing":"0.01em","fontWeight":"500"}],"headline-md":["1.25rem",{"lineHeight":"1.75rem","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-xl":["2rem",{"lineHeight":"2.5rem","letterSpacing":"-0.02em","fontWeight":"600"}],"code-block":["0.8125rem",{"lineHeight":"1.375rem","fontWeight":"400"}],"headline-lg":["1.5rem",{"lineHeight":"2rem","letterSpacing":"-0.015em","fontWeight":"600"}],"code-inline":["0.8125rem",{"lineHeight":"1.25rem","fontWeight":"400"}],"label-sm":["0.6875rem",{"lineHeight":"1.0rem","letterSpacing":"0.04em","fontWeight":"600"}],"body-sm":["0.8125rem",{"lineHeight":"1.25rem","fontWeight":"400"}]}}}};</script></head><body class="bg-surface text-on-surface font-body-md text-body-md antialiased min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/30 flex items-center justify-between px-gutter-desktop select-none"><div class="flex items-center gap-space-md"><div class="flex items-center gap-1.5 mr-space-xs"><span class="w-3 h-3 rounded-full bg-[#ff5f56] inline-block opacity-80 hover:opacity-100 transition-opacity"></span><span class="w-3 h-3 rounded-full bg-[#ffbd2e] inline-block opacity-80 hover:opacity-100 transition-opacity"></span><span class="w-3 h-3 rounded-full bg-[#27c93f] inline-block opacity-80 hover:opacity-100 transition-opacity"></span></div><div class="flex items-center gap-space-xs"><img alt="Your Notes Logo" class="h-6 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VL8sfSP-mSlyHUL0bv3P_KVhEdJ5qliXq1mVvKdFtuM3zHSaDsxYnZYYzcXS7XQ3TtRmyfM8IdL9FZD0mQ8SI1T57CAln25vms6wtVBnFR0Psioxtub_S1OouoomazJsyaSUk0IDZbn8WRjIpJO1_7xNNWJlrbfbXCAhcSUKvxw58ZnG3j66lQ-hTjYZuqAo205DxHwbFWVjnZcP-uTQdXSZx_q7XzSAHsd2rJAv_1WDwxlTElmYkWTKVD"/><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-medium">Your Notes</span></div><div class="h-4 w-[1px] bg-outline-variant/40 mx-space-xs"></div><div class="flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 cursor-pointer text-on-surface"><span class="material-symbols-outlined text-outline text-[16px]">folder_supervised</span><span class="font-label-md text-label-md text-on-surface">Engineering Knowledge Vault</span><span class="material-symbols-outlined text-outline text-[16px]">arrow_drop_down</span></div></div><div class="flex items-center justify-center flex-1 max-w-md mx-space-lg"><button class="w-full flex items-center justify-between px-space-md py-1.5 rounded bg-surface-container-low hover:bg-surface-container border border-outline-variant/30 text-outline hover:text-on-surface transition-colors"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[16px]">search</span><span class="font-body-sm text-body-sm text-outline">Quick Search files or commands...</span></div><div class="flex items-center gap-1"><kbd class="font-code-inline text-code-inline bg-surface-container-high px-1.5 py-0.5 rounded text-on-surface-variant border border-outline-variant/40">Cmd</kbd><kbd class="font-code-inline text-code-inline bg-surface-container-high px-1.5 py-0.5 rounded text-on-surface-variant border border-outline-variant/40">K</kbd></div></button></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs text-outline-variant"><a class="p-1.5 rounded hover:bg-surface-container hover:text-on-surface text-outline transition-colors" data-path="graph-view" href="#" title="Graph View"><span class="material-symbols-outlined text-[18px]">hub</span></a><a class="p-1.5 rounded hover:bg-surface-container hover:text-on-surface text-outline transition-colors" data-path="canvas-view" href="#" title="Canvas Board"><span class="material-symbols-outlined text-[18px]">space_dashboard</span></a></div><div class="h-4 w-[1px] bg-outline-variant/40"></div><div class="flex items-center gap-1.5 px-space-xs"><span class="w-2 h-2 rounded-full bg-secondary inline-block animate-pulse"></span><span class="font-label-sm text-label-sm text-on-surface-variant">Synced 2m ago</span></div><div class="h-4 w-[1px] bg-outline-variant/40"></div><img alt="Profile" class="w-7 h-7 rounded-full object-cover ring-1 ring-outline-variant/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSN2KY6Gv5hVUyJjefHi-a6fduPu-rIydxln-Oh7Tz3J0FZcHRr2rh5Ubtg3v6Z-xkaR635gVUPN2Nlgplk8-35lGcFccGMgE6IrYIx_idu2HEGyfKLNYyu8Taq-R0qXh2umY0J83uXV8D6DaZku8ihZNQxdIPHhqpkjdslgQe5w7RQKOSR-3xPjrdyCKe-Mmc1E05QRn62h18mlkgRLu0O7A9ilUNFWK6RVfmomY0gsv21pbhkobY9Q"/></div></header><aside class="fixed left-0 top-14 bottom-0 w-64 bg-surface-container-lowest border-r border-outline-variant/30 z-40 flex flex-col justify-between py-space-md select-none"><div class="flex flex-col gap-space-sm px-space-sm"><div class="px-space-sm py-1 flex items-center justify-between text-outline"><span class="font-label-sm text-label-sm tracking-wider uppercase text-outline">Navigation</span><span class="material-symbols-outlined text-[16px] cursor-pointer hover:text-on-surface">create_new_folder</span></div><nav class="flex flex-col gap-space-xs" data-active-classes="bg-surface-container-high text-on-surface font-medium border-l-2 border-primary"><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-1.5 rounded transition-all bg-surface-container-high text-on-surface font-medium border-l-2 border-primary" data-path="markdown-editor" href="#"><span class="material-symbols-outlined text-[18px]">description</span>Editor Workspace</a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-all" data-path="graph-view" href="#"><span class="material-symbols-outlined text-[18px]">account_tree</span>Graph Visualizer</a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-all" data-path="canvas-view" href="#"><span class="material-symbols-outlined text-[18px]">widgets</span>Canvas Board</a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-all" data-path="daily-notes" href="#"><span class="material-symbols-outlined text-[18px]">calendar_today</span>Daily Journal</a><a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-all" data-path="vault-settings" href="#"><span class="material-symbols-outlined text-[18px]">settings</span>Vault Preferences</a></nav></div><div class="px-space-sm pt-space-sm border-t border-outline-variant/20"><div class="flex items-center justify-between px-space-sm py-1.5 rounded bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm"><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-secondary">lock</span><span>Local Storage</span></div><span class="font-code-inline text-code-inline text-outline">1,428 notes</span></div></div></aside><div class="pl-64"><main class="w-full min-h-[calc(100vh-3.5rem)] pt-14 bg-surface text-on-surface"><div class="flex flex-col w-full h-[calc(100vh-3.5rem)] overflow-hidden select-none text-on-surface">
+<!-- 3-PANE WORKSPACE WRAPPER -->
+<div class="flex flex-1 h-full w-full overflow-hidden">
+<!-- ========================================== -->
+<!-- 1. LEFT SIDEBAR: FILE EXPLORER & TREE (~260px) -->
+<!-- ========================================== -->
+<aside class="w-64 flex-shrink-0 bg-surface-container-lowest flex flex-col justify-between overflow-hidden">
+<!-- Top Section -->
+<div class="flex flex-col flex-1 min-h-0">
+<!-- Vault Switcher Header -->
+<div class="h-10 px-space-md flex items-center justify-between bg-surface-container-low/40">
+<div class="flex items-center gap-space-xs cursor-pointer hover:text-on-surface text-on-surface-variant transition-colors min-w-0">
+<span class="material-symbols-outlined text-[16px] text-primary flex-shrink-0">inventory_2</span>
+<span class="font-label-md text-label-md font-medium truncate">Engineering Vault</span>
+<span class="material-symbols-outlined text-[14px] text-outline">unfold_more</span>
+</div>
+<div class="flex items-center gap-0.5 text-outline">
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors" title="New Note (Cmd+N)">
+<span class="material-symbols-outlined text-[15px]">note_add</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors" title="New Folder">
+<span class="material-symbols-outlined text-[15px]">create_new_folder</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Collapse All">
+<span class="material-symbols-outlined text-[15px]">unfold_less</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Sort Order">
+<span class="material-symbols-outlined text-[15px]">sort</span>
+</button>
+</div>
+</div>
+<!-- Filter / Quick Find Bar -->
+<div class="px-space-sm py-1.5 bg-surface-container-lowest">
+<div class="flex items-center gap-1.5 px-space-sm py-1 rounded bg-surface-container-low text-on-surface-variant focus-within:bg-surface-container focus-within:text-on-surface transition-all">
+<span class="material-symbols-outlined text-[14px] text-outline">filter_list</span>
+<input class="bg-transparent text-body-sm font-body-sm w-full outline-none placeholder:text-outline/70" placeholder="Filter files..." type="text"/>
+<kbd class="font-code-inline text-[10px] px-1 py-0.2 bg-surface-container-high rounded text-outline">⌘F</kbd>
+</div>
+</div>
+<!-- Scrollable Navigation Trees -->
+<div class="flex-1 overflow-y-auto px-1.5 py-1 space-y-3">
+<!-- Section: Pinned Bookmarks -->
+<div>
+<div class="flex items-center justify-between px-space-xs py-0.5 text-outline uppercase font-label-sm text-[10px] tracking-wider">
+<span>Bookmarks</span>
+<span class="material-symbols-outlined text-[13px] cursor-pointer hover:text-on-surface">more_horiz</span>
+</div>
+<div class="space-y-0.5 mt-0.5">
+<a class="flex items-center gap-1.5 px-space-xs py-1 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors group" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">star</span>
+<span class="font-label-md text-label-md truncate">Memory Model & Virtual Threads</span>
+</a>
+<a class="flex items-center gap-1.5 px-space-xs py-1 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors group" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">star</span>
+<span class="font-label-md text-label-md truncate">Distributed Cache Arch</span>
+</a>
+</div>
+</div>
+<!-- Section: Tags Navigation -->
+<div>
+<div class="flex items-center justify-between px-space-xs py-0.5 text-outline uppercase font-label-sm text-[10px] tracking-wider">
+<span>Tags</span>
+<span class="material-symbols-outlined text-[13px]">tag</span>
+</div>
+<div class="space-y-0.5 mt-0.5">
+<a class="flex items-center justify-between px-space-xs py-0.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#">
+<span class="font-code-inline text-[11px] text-primary truncate">#java/concurrency</span>
+<span class="font-code-inline text-[10px] text-outline px-1 rounded bg-surface-container">14</span>
+</a>
+<a class="flex items-center justify-between px-space-xs py-0.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#">
+<span class="font-code-inline text-[11px] text-primary truncate">#architecture/oop</span>
+<span class="font-code-inline text-[10px] text-outline px-1 rounded bg-surface-container">28</span>
+</a>
+<a class="flex items-center justify-between px-space-xs py-0.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#">
+<span class="font-code-inline text-[11px] text-primary truncate">#system-design</span>
+<span class="font-code-inline text-[10px] text-outline px-1 rounded bg-surface-container">9</span>
+</a>
+</div>
+</div>
+<!-- Section: File Explorer -->
+<div>
+<div class="flex items-center justify-between px-space-xs py-0.5 text-outline uppercase font-label-sm text-[10px] tracking-wider">
+<span>Files</span>
+<span class="material-symbols-outlined text-[13px]">folder_open</span>
+</div>
+<div class="mt-1 space-y-0.5 font-label-md text-label-md">
+<!-- Folder 01 -->
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded text-on-surface-variant hover:bg-surface-container cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+<span class="material-symbols-outlined text-[15px] text-outline">folder</span>
+<span class="truncate">01 - Computer Science</span>
+</div>
+<!-- Folder 02 (Expanded) -->
+<div>
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded text-on-surface hover:bg-surface-container cursor-pointer transition-colors font-medium">
+<span class="material-symbols-outlined text-[14px] text-outline">expand_more</span>
+<span class="material-symbols-outlined text-[15px] text-primary">folder_open</span>
+<span class="truncate">02 - Java Architecture</span>
+</div>
+<!-- Level 2 Nested: Concurrency & Threads (Expanded) -->
+<div class="pl-3.5 ml-2 mt-0.5 space-y-0.5 bg-surface-container-high/10 rounded">
+<div class="flex items-center gap-1 px-1 py-1 rounded text-on-surface hover:bg-surface-container cursor-pointer transition-colors font-medium">
+<span class="material-symbols-outlined text-[13px] text-outline">expand_more</span>
+<span class="material-symbols-outlined text-[14px] text-primary">folder_open</span>
+<span class="truncate">Concurrency & Threads</span>
+</div>
+<!-- Level 3 Nested Files -->
+<div class="pl-3 ml-2 space-y-0.5">
+<a class="flex items-center gap-1.5 px-1.5 py-1 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span class="truncate text-[12px]">Thread Pools & Executors.md</span>
+</a>
+<a class="flex items-center gap-1.5 px-1.5 py-1 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span class="truncate text-[12px]">Java Memory Model & Volatile.md</span>
+</a>
+<!-- Selected File State -->
+<div class="flex items-center justify-between px-1.5 py-1 rounded bg-surface-container-high text-primary font-medium transition-colors shadow-sm relative">
+<div class="absolute left-0 top-1 bottom-1 w-0.5 bg-primary rounded-full"></div>
+<div class="flex items-center gap-1.5 pl-1.5 min-w-0">
+<span class="material-symbols-outlined text-[14px] text-primary flex-shrink-0">description</span>
+<span class="truncate text-[12px] text-on-surface font-medium">Virtual Threads & Loom.md</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary flex-shrink-0 ml-1"></span>
+</div>
+<a class="flex items-center gap-1.5 px-1.5 py-1 rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span class="truncate text-[12px]">Lock-Free Data Structures.md</span>
+</a>
+</div>
+<!-- Level 2 Folder: OOP Patterns (Collapsed) -->
+<div class="flex items-center gap-1 px-1 py-1 rounded text-on-surface-variant hover:bg-surface-container cursor-pointer transition-colors mt-1">
+<span class="material-symbols-outlined text-[13px] text-outline">chevron_right</span>
+<span class="material-symbols-outlined text-[14px] text-outline">folder</span>
+<span class="truncate">Object-Oriented Patterns</span>
+</div>
+</div>
+</div>
+<!-- Folder 03 -->
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded text-on-surface-variant hover:bg-surface-container cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+<span class="material-symbols-outlined text-[15px] text-outline">folder</span>
+<span class="truncate">03 - Distributed Systems</span>
+</div>
+<!-- Folder 04 -->
+<div class="flex items-center gap-1.5 px-space-xs py-1 rounded text-on-surface-variant hover:bg-surface-container cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+<span class="material-symbols-outlined text-[15px] text-outline">folder</span>
+<span class="truncate">04 - Daily Notes</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Left Sidebar Bottom Status Bar -->
+<div class="h-10 px-space-sm bg-surface-container-low flex items-center justify-between text-outline">
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Vault Preferences">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Help & Hotkeys">
+<span class="material-symbols-outlined text-[16px]">help_outline</span>
+</button>
+</div>
+<div class="flex items-center gap-1 text-[11px] font-code-inline text-outline/80">
+<span>412 notes</span>
+<span>•</span>
+<span>18.4 MB</span>
+</div>
+</div>
+</aside>
+<!-- ========================================== -->
+<!-- 2. CENTER STAGE: EDITOR & WORKSPACE (Fluid)-->
+<!-- ========================================== -->
+<section class="flex-1 min-w-0 bg-surface flex flex-col justify-between overflow-hidden">
+<!-- Top Tab Bar -->
+<div class="h-9 bg-surface-container-lowest flex items-center justify-between px-space-xs select-none">
+<!-- Tabs List -->
+<div class="flex items-center h-full gap-0.5 overflow-x-auto">
+<!-- Active Tab -->
+<div class="h-full flex items-center gap-2 px-3 bg-surface text-on-surface font-label-md text-label-md rounded-t relative">
+<div class="absolute top-0 left-0 right-0 h-0.5 bg-primary"></div>
+<span class="material-symbols-outlined text-[14px] text-primary">description</span>
+<span class="truncate max-w-[160px] font-medium">Virtual Threads & Loom.md</span>
+<button class="w-4 h-4 rounded hover:bg-surface-container-high flex items-center justify-center text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[12px]">close</span>
+</button>
+</div>
+<!-- Inactive Tab 2 -->
+<div class="h-full flex items-center gap-2 px-3 text-on-surface-variant hover:bg-surface-container-low/80 hover:text-on-surface font-label-md text-label-md rounded-t transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span class="truncate max-w-[140px]">Thread Pools & Executors.md</span>
+<button class="w-4 h-4 rounded hover:bg-surface-container-high hidden group-hover:flex items-center justify-center text-outline hover:text-on-surface">
+<span class="material-symbols-outlined text-[12px]">close</span>
+</button>
+</div>
+<!-- Inactive Tab 3 -->
+<div class="h-full flex items-center gap-2 px-3 text-on-surface-variant hover:bg-surface-container-low/80 hover:text-on-surface font-label-md text-label-md rounded-t transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span class="truncate max-w-[140px]">SOLID Principles Revisited.md</span>
+<button class="w-4 h-4 rounded hover:bg-surface-container-high hidden group-hover:flex items-center justify-center text-outline hover:text-on-surface">
+<span class="material-symbols-outlined text-[12px]">close</span>
+</button>
+</div>
+</div>
+<!-- Tab Bar Control Actions -->
+<div class="flex items-center gap-1 text-outline">
+<button class="p-1 rounded hover:bg-surface-container hover:text-on-surface transition-colors" title="Split Pane Right">
+<span class="material-symbols-outlined text-[16px]">vertical_split</span>
+</button>
+<div class="flex items-center bg-surface-container-low rounded p-0.5 text-outline">
+<button class="px-2 py-0.5 rounded text-[11px] font-label-md bg-surface text-on-surface font-medium shadow-sm">Edit</button>
+<button class="px-2 py-0.5 rounded text-[11px] font-label-md hover:text-on-surface transition-colors">Preview</button>
+</div>
+<button class="p-1 rounded hover:bg-surface-container hover:text-on-surface transition-colors" title="More Note Options">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Breadcrumbs Bar -->
+<div class="h-8 px-gutter-desktop flex items-center justify-between text-outline bg-surface-container-lowest/30">
+<div class="flex items-center gap-1.5 font-label-sm text-label-sm text-outline">
+<span class="hover:text-on-surface cursor-pointer transition-colors">Engineering Vault</span>
+<span class="text-[12px]">/</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">02 - Java Architecture</span>
+<span class="text-[12px]">/</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">Concurrency & Threads</span>
+<span class="text-[12px]">/</span>
+<span class="text-on-surface font-medium truncate">Virtual Threads & Loom.md</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-[11px] text-outline/80">
+<span class="material-symbols-outlined text-[13px] text-secondary">cloud_done</span>
+<span>Edited 2m ago</span>
+</div>
+</div>
+<!-- Main Document Scroll Container -->
+<div class="flex-1 overflow-y-auto relative px-gutter-desktop py-space-lg scroll-smooth">
+<!-- Centered Reading Prose Container (~740px) -->
+<div class="max-w-[740px] mx-auto space-y-space-lg">
+<!-- Collapsible Metadata / YAML Frontmatter -->
+<div class="rounded bg-surface-container-low p-space-md space-y-2">
+<div class="flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-2 text-outline group-hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[15px]">code_blocks</span>
+<span class="font-code-inline text-[11px] font-medium uppercase tracking-wider text-outline">Properties (YAML)</span>
+</div>
+<span class="material-symbols-outlined text-[15px] text-outline group-hover:text-on-surface">expand_less</span>
+</div>
+<div class="grid grid-cols-2 gap-y-2 gap-x-4 pt-1 font-code-inline text-code-inline text-[12px]">
+<div class="flex items-center gap-2">
+<span class="text-outline w-16">tags:</span>
+<div class="flex flex-wrap gap-1">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-primary text-[10px]">java</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-primary text-[10px]">concurrency</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-primary text-[10px]">project-loom</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-primary text-[10px]">jvm</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-outline w-16">status:</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-container/20 text-secondary text-[11px] font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  in-progress
+                </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-outline w-16">created:</span>
+<span class="text-on-surface-variant font-code-inline">2024-03-22</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-outline w-16">priority:</span>
+<span class="px-1.5 py-0.5 rounded bg-tertiary-container/20 text-tertiary text-[11px] font-medium">high</span>
+</div>
+</div>
+</div>
+<!-- Document Header Title -->
+<div class="space-y-space-sm pt-space-xs">
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight font-semibold">
+              Virtual Threads & Project Loom: Mechanics & Architecture
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+              Java 21 delivers <span class="font-medium text-primary">JEP 444</span>, officially stabilizing user-mode lightweight Virtual Threads. While conventional platform threads implement a rigid 1:1 mapping with native OS kernel threads, virtual threads decouple execution context via an M:N scheduling model orchestrated directly on JVM Carrier Threads backed by standard <code class="font-code-inline text-code-inline px-1 py-0.5 bg-surface-container-high rounded text-primary">ForkJoinPool</code> instances.
+            </p>
+</div>
+<!-- Floating Inline Action / Formatting Pill Toolbar (Subtle) -->
+<div class="flex items-center gap-1 px-2 py-1 bg-surface-container-high rounded shadow-md w-fit text-on-surface-variant">
+<button class="px-1.5 py-0.5 hover:bg-surface-container hover:text-on-surface rounded text-[11px] font-label-md">H2</button>
+<button class="px-1.5 py-0.5 hover:bg-surface-container hover:text-on-surface rounded text-[11px] font-label-md">H3</button>
+<span class="w-px h-3 bg-outline-variant/40 mx-0.5"></span>
+<button class="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline"><span class="material-symbols-outlined text-[15px]">format_bold</span></button>
+<button class="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline"><span class="material-symbols-outlined text-[15px]">format_italic</span></button>
+<button class="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline"><span class="material-symbols-outlined text-[15px]">code</span></button>
+<button class="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline"><span class="material-symbols-outlined text-[15px]">link</span></button>
+<button class="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline"><span class="material-symbols-outlined text-[15px]">check_box</span></button>
+<button class="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline"><span class="material-symbols-outlined text-[15px]">table_chart</span></button>
+</div>
+<!-- Section H2 -->
+<div class="space-y-space-md pt-space-xs">
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">
+              Architectural Guardrails & Pinning Risks
+            </h2>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Adopting lightweight concurrency does not mean unbounded scalability without trade-offs. The dominant hazard in production migrations is <strong class="text-on-surface font-medium">Carrier Thread Pinning</strong>, which happens when a virtual thread halts inside a synchronized block or native JNI call, prohibiting the runtime from parking its execution frame.
+            </p>
+<!-- Checklist -->
+<div class="p-space-md rounded bg-surface-container-low space-y-2">
+<label class="flex items-start gap-2.5 cursor-pointer">
+<input checked="" class="mt-1 w-4 h-4 rounded bg-surface-container-high border-0 accent-primary cursor-pointer" type="checkbox"/>
+<span class="font-body-md text-body-md text-outline line-through">
+                  Avoid pinning carrier threads by removing synchronized blocks in favor of <code class="font-code-inline text-code-inline px-1 py-0.2 bg-surface-container rounded text-on-surface-variant">ReentrantLock</code>
+</span>
+</label>
+<label class="flex items-start gap-2.5 cursor-pointer">
+<input checked="" class="mt-1 w-4 h-4 rounded bg-surface-container-high border-0 accent-primary cursor-pointer" type="checkbox"/>
+<span class="font-body-md text-body-md text-outline line-through">
+                  Do not pool virtual threads (they are cheap, ephemeral, and designed to die after completion)
+                </span>
+</label>
+<label class="flex items-start gap-2.5 cursor-pointer">
+<input class="mt-1 w-4 h-4 rounded bg-surface-container-high border-0 accent-primary cursor-pointer" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">
+                  Benchmark JDBC connection pool contention under 100k concurrent requests (use HikariCP max pool ceilings)
+                </span>
+</label>
+<label class="flex items-start gap-2.5 cursor-pointer">
+<input class="mt-1 w-4 h-4 rounded bg-surface-container-high border-0 accent-primary cursor-pointer" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">
+                  Review <code class="font-code-inline text-code-inline px-1 py-0.2 bg-surface-container rounded text-primary">ThreadLocal</code> memory leakage risks in thread-per-task model
+                </span>
+</label>
+</div>
+</div>
+<!-- Code Snippet Section -->
+<div class="space-y-space-sm pt-space-xs">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-medium">
+                Structured Concurrency Pattern
+              </h3>
+<span class="font-code-inline text-xs text-outline">TaskExecutorExample.java</span>
+</div>
+<div class="rounded overflow-hidden bg-surface-container-lowest shadow-md">
+<div class="h-8 px-space-md bg-surface-container-low flex items-center justify-between text-outline text-xs font-code-inline">
+<span class="text-primary font-medium">java</span>
+<button class="flex items-center gap-1 hover:text-on-surface transition-colors py-0.5 px-1.5 rounded hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+<div class="p-space-md overflow-x-auto font-code-block text-code-block text-[13px] leading-relaxed text-on-surface-variant">
+<pre><code><span class="text-outline">// Creating an unstarted virtual thread builder with per-task semantics</span>
+<span class="text-tertiary">try</span> (<span class="text-primary">var</span> executor = <span class="text-secondary">Executors</span>.newVirtualThreadPerTaskExecutor()) {
+    <span class="text-secondary">IntStream</span>.range(<span class="text-tertiary">0</span>, <span class="text-tertiary">10_000</span>).forEach(i -> {
+        executor.submit(() -> {
+            <span class="text-secondary">Thread</span>.sleep(<span class="text-secondary">Duration</span>.ofMillis(<span class="text-tertiary">100</span>));
+            <span class="text-tertiary">return</span> <span class="text-secondary-fixed-dim">"Task "</span> + i + <span class="text-secondary-fixed-dim">" completed on carrier: "</span> + <span class="text-secondary">Thread</span>.currentThread();
+        });
+    });
+} <span class="text-outline">// Automatically awaits completion of all child tasks upon block termination</span></code></pre>
+</div>
+</div>
+</div>
+<!-- Technical Comparison Matrix (Table without lines, using soft row backgrounds) -->
+<div class="space-y-space-sm pt-space-xs">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-medium">
+              Runtime Characteristics Comparison
+            </h3>
+<div class="rounded overflow-hidden bg-surface-container-lowest">
+<table class="w-full text-left font-body-sm text-body-sm border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-outline font-label-md text-label-md">
+<th class="py-2.5 px-space-md">Metric / Attribute</th>
+<th class="py-2.5 px-space-md">Platform Threads (OS)</th>
+<th class="py-2.5 px-space-md text-primary">Virtual Threads (Loom)</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-on-surface-variant">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-2 px-space-md font-medium text-on-surface">Default Stack Footprint</td>
+<td class="py-2 px-space-md font-code-inline text-[12px]">~1 MB (Fixed memory block)</td>
+<td class="py-2 px-space-md font-code-inline text-[12px] text-secondary">~few KB (Heap-allocated dynamically)</td>
+</tr>
+<tr class="bg-surface-container-low/20 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-2 px-space-md font-medium text-on-surface">Context Switch Overhead</td>
+<td class="py-2 px-space-md font-code-inline text-[12px]">Kernel context shift (~1-2 µs)</td>
+<td class="py-2 px-space-md font-code-inline text-[12px] text-secondary">JVM user-space yield (~nanoseconds)</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-2 px-space-md font-medium text-on-surface">Maximum Practical Scale</td>
+<td class="py-2 px-space-md font-code-inline text-[12px]">~数千 (OOM / thread exhaustion)</td>
+<td class="py-2 px-space-md font-code-inline text-[12px] text-secondary">Millions concurrent (Heap bounded)</td>
+</tr>
+<tr class="bg-surface-container-low/20 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-2 px-space-md font-medium text-on-surface">Underlying Scheduler</td>
+<td class="py-2 px-space-md font-code-inline text-[12px]">Linux CFS / Windows Preemptive</td>
+<td class="py-2 px-space-md font-code-inline text-[12px] text-secondary">JVM Carrier ForkJoinPool</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Internal Wiki-links & Admonition Callout -->
+<div class="space-y-space-md pt-space-xs">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              For comprehensive scheduling details, check our cross-references in
+              <a class="text-primary hover:text-primary-fixed underline decoration-dashed hover:decoration-solid font-medium transition-all" href="#">[[Thread Pools & Executors]]</a>
+              and review memory barriers described in
+              <a class="text-primary hover:text-primary-fixed underline decoration-dashed hover:decoration-solid font-medium transition-all" href="#">[[Java Memory Model & Volatile]]</a>.
+            </p>
+<!-- Callout Admonition -->
+<div class="p-space-md rounded bg-surface-container-low flex items-start gap-3 shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[20px] flex-shrink-0 mt-0.5">lightbulb</span>
+<div class="space-y-1">
+<span class="font-label-md text-label-md text-tertiary font-semibold uppercase tracking-wide">Migration Pro Tip</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  When migrating legacy blocking I/O services to Virtual Threads, ensure third-party JDBC drivers and cryptography libraries avoid <code class="font-code-inline text-code-inline px-1 py-0.2 bg-surface-container rounded text-primary">synchronized</code> blocks on hot execution paths to prevent pinning carrier workers during slow TCP waits.
+                </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Center Bottom Status Bar -->
+<div class="h-7 px-gutter-desktop bg-surface-container-lowest flex items-center justify-between text-outline font-label-sm text-[11px] select-none">
+<div class="flex items-center gap-3">
+<span>Words: <strong class="text-on-surface-variant font-medium">1,428</strong></span>
+<span>Chars: <strong class="text-on-surface-variant font-medium">9,842</strong></span>
+<span>Read time: <strong class="text-on-surface-variant font-medium">6 min</strong></span>
+</div>
+<div class="flex items-center gap-3 font-code-inline text-[10px]">
+<span>UTF-8</span>
+<span>LF</span>
+<div class="flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[13px]">cloud_done</span>
+<span>Saved</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- 3. RIGHT SIDEBAR: INSPECTOR & BACKLINKS (~280px) -->
+<!-- ========================================== -->
+<aside class="w-72 flex-shrink-0 bg-surface-container-lowest flex flex-col justify-between overflow-hidden">
+<!-- Top Inspector Tab Switcher -->
+<div class="h-9 bg-surface-container-low px-1 flex items-center justify-between text-on-surface-variant">
+<div class="flex items-center gap-0.5 w-full">
+<button class="flex-1 py-1 px-1 rounded bg-surface-container-high text-on-surface font-label-md text-[11px] font-medium transition-colors text-center shadow-sm">
+            Outline
+          </button>
+<button class="flex-1 py-1 px-1 rounded hover:bg-surface-container text-outline hover:text-on-surface font-label-md text-[11px] transition-colors text-center">
+            Backlinks <span class="font-code-inline text-[9px] text-primary">4</span>
+</button>
+<button class="flex-1 py-1 px-1 rounded hover:bg-surface-container text-outline hover:text-on-surface font-label-md text-[11px] transition-colors text-center">
+            Outgoing <span class="font-code-inline text-[9px] text-primary">6</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-outline hover:text-on-surface" title="Local Graph">
+<span class="material-symbols-outlined text-[14px]">hub</span>
+</button>
+</div>
+</div>
+<!-- Inspector Content Body -->
+<div class="flex-1 overflow-y-auto px-space-md py-space-sm space-y-space-md">
+<!-- Active Section 1: Outline / TOC -->
+<div>
+<div class="flex items-center justify-between text-outline uppercase font-label-sm text-[10px] tracking-wider mb-2">
+<span>Table of Contents</span>
+<span class="material-symbols-outlined text-[13px]">format_list_bulleted</span>
+</div>
+<nav class="space-y-1 font-label-md text-label-md">
+<a class="block px-2 py-1 rounded bg-surface-container-low text-primary font-medium truncate" href="#">
+              Overview & Motivations
+            </a>
+<a class="block px-2 py-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface truncate transition-colors pl-4" href="#">
+              Platform vs Virtual Threads
+            </a>
+<a class="block px-2 py-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface truncate transition-colors pl-4" href="#">
+              JVM Scheduler & Carrier Threads
+            </a>
+<a class="block px-2 py-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface truncate transition-colors pl-4" href="#">
+              Eliminating Thread Pinning
+            </a>
+<a class="block px-2 py-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface truncate transition-colors pl-4" href="#">
+              Benchmarks & Performance
+            </a>
+</nav>
+</div>
+<!-- Section 2: Linked Backlinks (4) -->
+<div class="pt-space-xs">
+<div class="flex items-center justify-between text-outline uppercase font-label-sm text-[10px] tracking-wider mb-2">
+<span>Linked References (4)</span>
+<span class="material-symbols-outlined text-[13px]">link</span>
+</div>
+<div class="space-y-2">
+<!-- Backlink card 1 -->
+<div class="p-2 rounded bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-1.5 text-primary text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-[12px]">description</span>
+<span class="truncate">System Design Checklist</span>
+</div>
+<p class="font-body-sm text-[11px] text-outline group-hover:text-on-surface-variant line-clamp-2 leading-tight">
+                "...recommend upgrading backend workers to Java 21 <span class="text-on-surface font-medium bg-surface-container-high px-1 rounded">Virtual Threads</span> for high-concurrency ingestion..."
+              </p>
+</div>
+<!-- Backlink card 2 -->
+<div class="p-2 rounded bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-1.5 text-primary text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-[12px]">description</span>
+<span class="truncate">Microservice Architecture Review</span>
+</div>
+<p class="font-body-sm text-[11px] text-outline group-hover:text-on-surface-variant line-clamp-2 leading-tight">
+                "...investigating thread starvation using loom virtual threads for downstream gRPC dispatch..."
+              </p>
+</div>
+</div>
+</div>
+<!-- Section 3: Outgoing Links (6) -->
+<div class="pt-space-xs">
+<div class="flex items-center justify-between text-outline uppercase font-label-sm text-[10px] tracking-wider mb-1.5">
+<span>Outgoing Links (6)</span>
+<span class="material-symbols-outlined text-[13px]">call_made</span>
+</div>
+<div class="space-y-1 font-label-md text-label-md">
+<a class="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[12px] text-outline">arrow_outward</span>
+<span class="truncate text-[12px]">ForkJoinPool Architecture</span>
+</a>
+<a class="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[12px] text-outline">arrow_outward</span>
+<span class="truncate text-[12px]">ReentrantLock vs Synchronized</span>
+</a>
+<a class="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[12px] text-outline">arrow_outward</span>
+<span class="truncate text-[12px]">JVM Memory Management</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Right Sidebar Bottom Meta Specs -->
+<div class="h-10 px-space-md bg-surface-container-low flex items-center justify-between text-outline font-label-sm text-[11px]">
+<span>Size: <strong class="text-on-surface-variant">14.2 KB</strong></span>
+<div class="flex items-center gap-2">
+<span>In: <strong class="text-primary">4</strong></span>
+<span>•</span>
+<span>Out: <strong class="text-primary">6</strong></span>
+</div>
+</div>
+</aside>
+</div>
+</div></main></div></body></html>
