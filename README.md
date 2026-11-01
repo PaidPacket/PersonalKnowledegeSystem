@@ -10,6 +10,11 @@ A local-first, web-native Markdown knowledge management workspace engineered wit
 - **Local-First Persistence**: Transactionally persists notes, folders, tabs, and canvas topologies to browser `IndexedDB` (`YourNotesKnowledgeVaultDB`) and `localStorage` with Markdown `.md` import/export and full `.json` vault backup.
 - **High-Thinking Vault Reasoning**: Server-side `/api/ai/thinking` integration powered by `@google/genai` (`gemini-4-argon` with `ThinkingLevel.HIGH`).
 
+## Quick Start Launcher (One-Click Localhost)
+
+- **Windows**: Double-click `start-app.cmd` (or run `.\start-app.cmd` in Command Prompt / PowerShell). It automatically checks for `node_modules`, runs `npm install` if needed, opens `http://localhost:3000` in your default browser, and runs `npm run dev`.
+- **macOS / Linux**: Run `./start-app.sh` to automatically install dependencies if needed, open `http://localhost:3000`, and start `npm run dev`.
+
 ## Scripts
 
 - `npm run dev` — Starts the full-stack Express + Vite server on port 3000.
