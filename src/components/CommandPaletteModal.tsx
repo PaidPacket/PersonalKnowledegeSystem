@@ -10,6 +10,7 @@ interface CommandPaletteModalProps {
   onCreateNote: () => void;
   onSelectView: (view: WorkspaceView) => void;
   onOpenThinkingModal: () => void;
+  onOpenPresentationDeck?: () => void;
 }
 
 export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
@@ -20,6 +21,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   onCreateNote,
   onSelectView,
   onOpenThinkingModal,
+  onOpenPresentationDeck,
 }) => {
   const [query, setQuery] = useState('');
 
@@ -72,6 +74,15 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       action: () => {
         onSelectView('canvas-view');
         onClose();
+      },
+    },
+    {
+      id: 'cmd-presentation',
+      label: 'Presentation: Open 11-Slide College Project Deck (PPTX Export)',
+      shortcut: 'Cmd+P',
+      action: () => {
+        onClose();
+        if (onOpenPresentationDeck) onOpenPresentationDeck();
       },
     },
   ].filter((c) => !q || c.label.toLowerCase().includes(q));

@@ -1,0 +1,249 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny all documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isParentVaultOwner(userId) {
+      return isOwner(userId)
+        && exists(/databases/$(database)/documents/vaults/$(userId))
+        && get(/databases/$(database)/documents/vaults/$(userId)).data.ownerId == request.auth.uid;
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUserVault(data, userId) {
+      return data.keys().hasAll([
+          'ownerId',
+          'vaultName',
+          'activeNoteId',
+          'openTabIds',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'vaultName',
+          'activeNoteId',
+          'openTabIds',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.vaultName is string
+        && data.vaultName.size() >= 1
+        && data.vaultName.size() <= 120
+        && data.activeNoteId is string
+        && isValidId(data.activeNoteId)
+        && data.openTabIds is list
+        && data.openTabIds.size() <= 25
+        && (data.openTabIds.size() == 0 || (data.openTabIds[0] is string && data.openTabIds[0].size() >= 1 && data.openTabIds[0].size() <= 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidVaultNote(data, userId, noteId) {
+      return data.keys().hasAll([
+          'id',
+          'ownerId',
+          'folderId',
+          'filename',
+          'title',
+          'lead',
+          'sectionHeading',
+          'sectionBody',
+          'wikiParagraph',
+          'rawMarkdown',
+          'status',
+          'priority',
+          'created',
+          'tags',
+          'bookmarked',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'ownerId',
+          'folderId',
+          'filename',
+          'title',
+          'lead',
+          'sectionHeading',
+          'sectionBody',
+          'wikiParagraph',
+          'rawMarkdown',
+          'status',
+          'priority',
+          'created',
+          'tags',
+          'bookmarked',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id is string
+        && data.id == noteId
+        && isValidId(data.id)
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId == request.auth.uid
+        && data.ownerId == userId
+        && data.folderId is string
+        && isValidId(data.folderId)
+        && data.filename is string
+        && data.filename.size() >= 1
+        && data.filename.size() <= 200
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 300
+        && data.lead is string
+        && data.lead.size() <= 2000
+        && data.sectionHeading is string
+        && data.sectionHeading.size() <= 300
+        && data.sectionBody is string
+        && data.sectionBody.size() <= 5000
+        && data.wikiParagraph is string
+        && data.wikiParagraph.size() <= 3000
+        && data.rawMarkdown is string
+        && data.rawMarkdown.size() >= 1
+        && data.rawMarkdown.size() <= 100000
+        && data.status is string
+        && data.status in ['in-progress', 'verified', 'draft', 'archived']
+        && data.priority is string
+        && data.priority in ['high', 'medium', 'low']
+        && data.created is string
+        && data.created.size() >= 1
+        && data.created.size() <= 40
+        && data.tags is list
+        && data.tags.size() <= 20
+        && (data.tags.size() == 0 || (data.tags[0] is string && data.tags[0].size() >= 1 && data.tags[0].size() <= 60))
+        && data.bookmarked is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Root User Vault Collection (/vaults/{userId})
+    match /vaults/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserVault(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserVault(incoming(), userId)
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Workspace Navigation Update (active note / open tabs)
+          incoming().diff(existing()).affectedKeys().hasOnly(['activeNoteId', 'openTabIds', 'updatedAt'])
+          ||
+          // Action 2: Full Vault Metadata Sync
+          incoming().diff(existing()).affectedKeys().hasOnly(['vaultName', 'activeNoteId', 'openTabIds', 'updatedAt'])
+        );
+
+      allow delete: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+
+      // 5. Vault Notes Subcollection (/vaults/{userId}/notes/{noteId})
+      match /notes/{noteId} {
+        allow get: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(noteId)
+          && existing().ownerId == request.auth.uid;
+
+        allow list: if isOwner(userId)
+          && isValidId(userId)
+          && existing().ownerId == request.auth.uid;
+
+        allow create: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(noteId)
+          && isValidVaultNote(incoming(), userId, noteId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isParentVaultOwner(userId);
+
+        allow update: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(noteId)
+          && isValidVaultNote(incoming(), userId, noteId)
+          && existing().ownerId == request.auth.uid
+          && incoming().ownerId == existing().ownerId
+          && incoming().id == existing().id
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && isParentVaultOwner(userId)
+          && (
+            // Action 1: Edit Active Note Content & Frontmatter (Forbidden if existing note is in terminal 'archived' state)
+            (
+              existing().status != 'archived'
+              && incoming().diff(existing()).affectedKeys().hasOnly([
+                'folderId',
+                'filename',
+                'title',
+                'lead',
+                'sectionHeading',
+                'sectionBody',
+                'wikiParagraph',
+                'rawMarkdown',
+                'status',
+                'priority',
+                'created',
+                'tags',
+                'bookmarked',
+                'updatedAt'
+              ])
+            )
+            ||
+            // Action 2: Unarchive or Toggle Status Only
+            (
+              incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+            )
+          );
+
+        allow delete: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(noteId)
+          && existing().ownerId == request.auth.uid
+          && isParentVaultOwner(userId);
+      }
+    }
+  }
+}

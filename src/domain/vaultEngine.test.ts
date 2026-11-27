@@ -9,6 +9,9 @@ import {
   computeBacklinks,
   computeOutgoingLinks,
   buildVaultGraph,
+  rebuildRawMarkdownFromNote,
+  syncStructuredFieldsFromRawMarkdown,
+  buildCanonicalMarkdownExport,
 } from './vaultEngine';
 import { INITIAL_NOTES } from './seedVault';
 
@@ -80,3 +83,39 @@ test('buildVaultGraph builds nodes, edges, and degree counts accurately', () => 
   assert.ok(vtNode.inDegree >= 4);
   assert.equal(vtNode.outDegree, 6);
 });
+
+test('rebuildRawMarkdownFromNote, syncStructuredFieldsFromRawMarkdown, and buildCanonicalMarkdownExport stay in sync', () => {
+  const vtNote = INITIAL_NOTES.find((n) => n.id === 'note-virtual-threads')!;
+  const rebuilt = rebuildRawMarkdownFromNote(vtNote);
+  assert.ok(rebuilt.startsWith('---\n'));
+  assert.ok(rebuilt.includes(`# ${vtNote.title}`));
+
+  const editedRaw = `---
+tags: [java/concurrency, firebase/firestore]
+status: verified
+created: 2026-11-01
+priority: high
+---
+
+# Virtual Threads & Firestore Sync
+Seamless hybrid local-first and cloud-synchronized knowledge base.
+
+## Cloud Persistence Strategy
+Synchronizes notes with [[Thread Pools & Executors]] and Firebase Firestore.
+- [x] Verify Firestore rules
+- [ ] Export canonical .md file`;
+
+  const synced = syncStructuredFieldsFromRawMarkdown(vtNote, editedRaw);
+  assert.equal(synced.title, 'Virtual Threads & Firestore Sync');
+  assert.equal(synced.frontmatter.status, 'verified');
+  assert.ok(synced.frontmatter.tags.includes('firebase/firestore'));
+  assert.equal(synced.sectionHeading, 'Cloud Persistence Strategy');
+  assert.equal(synced.checklist.length, 2);
+  assert.equal(synced.checklist[0].checked, true);
+
+  const exportedMd = buildCanonicalMarkdownExport(synced);
+  assert.ok(exportedMd.startsWith('---\n'));
+  assert.ok(exportedMd.endsWith('\n'));
+  assert.ok(exportedMd.includes('# Virtual Threads & Firestore Sync'));
+});
+

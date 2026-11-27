@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { NoteRecord, extractWikiLinks, resolveWikiLink } from '../domain/vaultEngine';
+import {
+  NoteRecord,
+  buildCanonicalMarkdownExport,
+  extractWikiLinks,
+  resolveWikiLink,
+} from '../domain/vaultEngine';
 
 interface VaultPreferencesViewProps {
   vaultName: string;
@@ -7,6 +12,14 @@ interface VaultPreferencesViewProps {
   onImportMarkdownNote: (filename: string, rawMarkdown: string) => void;
   onExportVaultJson: () => void;
   onOpenThinkingModal: () => void;
+  firebaseUser?: {
+    uid: string;
+    displayName: string | null;
+    email: string | null;
+  } | null;
+  onSignInFirebase?: () => void;
+  onSignOutFirebase?: () => void;
+  onForceCloudSync?: () => void;
 }
 
 export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
@@ -15,6 +28,10 @@ export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
   onImportMarkdownNote,
   onExportVaultJson,
   onOpenThinkingModal,
+  firebaseUser,
+  onSignInFirebase,
+  onSignOutFirebase,
+  onForceCloudSync,
 }) => {
   const [importTitle, setImportTitle] = useState('');
   const [importContent, setImportContent] = useState('');
@@ -33,6 +50,25 @@ export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
     }
   }
 
+  const handleDownloadNoteMarkdown = (note: NoteRecord) => {
+    const canonicalMd = buildCanonicalMarkdownExport(note);
+    const safeFilename = note.filename.toLowerCase().endsWith('.md')
+      ? note.filename
+      : `${note.title || 'Untitled Note'}.md`;
+
+    const blob = new Blob([canonicalMd], {
+      type: 'text/markdown;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleImportSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!importTitle.trim() || !importContent.trim()) return;
@@ -40,7 +76,11 @@ export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
       ? importTitle.trim()
       : `${importTitle.trim()}.md`;
     onImportMarkdownNote(filename, importContent);
-    setImportMessage(`Imported "${filename}" into local IndexedDB vault.`);
+    setImportMessage(
+      firebaseUser
+        ? `Imported "${filename}" into local IndexedDB vault and queued Firebase Firestore sync.`
+        : `Imported "${filename}" into local IndexedDB vault.`
+    );
     setImportTitle('');
     setImportContent('');
   };
@@ -69,6 +109,74 @@ export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
           </button>
         </div>
 
+        {/* Firebase Firestore Real-Time Cloud Sync Card */}
+        <div className="p-4 rounded bg-surface-container-low border border-outline-variant/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px] text-secondary">
+                cloud_done
+              </span>
+              <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                Firebase Firestore Cloud Database Connectivity
+              </h2>
+              <span
+                className={`px-2 py-0.5 rounded text-[10px] font-code-inline uppercase tracking-wider ${
+                  firebaseUser
+                    ? 'bg-secondary-container/30 text-secondary border border-secondary/30'
+                    : 'bg-surface-container-highest text-outline border border-outline-variant/30'
+                }`}
+              >
+                {firebaseUser ? 'Connected & Syncing' : 'Local-First Mode'}
+              </span>
+            </div>
+            <p className="text-xs text-on-surface-variant max-w-2xl">
+              {firebaseUser
+                ? `Signed in as ${firebaseUser.email || firebaseUser.displayName || firebaseUser.uid}. All note edits, YAML frontmatter properties, and new Markdown files sync automatically to /vaults/${firebaseUser.uid}/notes in Firestore.`
+                : 'Hybrid local-first persistence is active via IndexedDB & LocalStorage. Sign in with Google to enable real-time cloud synchronization with Firebase Firestore across sessions.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {firebaseUser ? (
+              <>
+                {onForceCloudSync && (
+                  <button
+                    type="button"
+                    onClick={onForceCloudSync}
+                    className="px-3 py-1.5 rounded bg-secondary text-on-secondary font-label-md text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">
+                      sync
+                    </span>
+                    <span>Sync Vault Now</span>
+                  </button>
+                )}
+                {onSignOutFirebase && (
+                  <button
+                    type="button"
+                    onClick={onSignOutFirebase}
+                    className="px-3 py-1.5 rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant border border-outline-variant/30 font-label-md text-xs transition-colors cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
+                )}
+              </>
+            ) : (
+              onSignInFirebase && (
+                <button
+                  type="button"
+                  onClick={onSignInFirebase}
+                  className="px-3.5 py-2 rounded bg-primary text-on-primary font-label-md text-xs font-semibold hover:opacity-95 transition-opacity flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    cloud_sync
+                  </span>
+                  <span>Connect Firebase with Google</span>
+                </button>
+              )
+            )}
+          </div>
+        </div>
+
         {/* Storage & Link Integrity Status */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 rounded bg-surface-container-low border border-outline-variant/20">
@@ -76,11 +184,13 @@ export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
               Persistence Engine
             </span>
             <div className="text-base font-semibold text-secondary mt-1">
-              IndexedDB + LocalStorage
+              {firebaseUser
+                ? 'Firebase Firestore + IndexedDB'
+                : 'IndexedDB + LocalStorage'}
             </div>
             <p className="text-xs text-on-surface-variant mt-1">
-              Local-first storage active. Browser data persists across reloads
-              without requiring a cloud account.
+              Hybrid local-first storage with automatic real-time Firestore
+              cloud synchronization when authenticated.
             </p>
           </div>
 
@@ -111,6 +221,52 @@ export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
             >
               Launch High-Thinking Synthesis →
             </button>
+          </div>
+        </div>
+
+        {/* Direct Markdown (.md) Export Table */}
+        <div className="p-4 rounded bg-surface-container-low border border-outline-variant/30 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-headline-sm text-headline-sm text-on-surface font-medium">
+                Export Notes as Standard Markdown (.md)
+              </h2>
+              <p className="text-xs text-on-surface-variant">
+                Download any vault note with canonical YAML frontmatter,
+                checklist tasks, and [[WikiLinks]] preserved.
+              </p>
+            </div>
+            <span className="font-code-inline text-[11px] text-outline">
+              {notes.length} notes available
+            </span>
+          </div>
+          <div className="divide-y divide-outline-variant/20 max-h-60 overflow-y-auto border border-outline-variant/20 rounded bg-surface-container-lowest">
+            {notes.map((note) => (
+              <div
+                key={note.id}
+                className="px-3 py-2 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors"
+              >
+                <div className="min-w-0">
+                  <div className="text-xs font-medium text-on-surface truncate">
+                    {note.filename}
+                  </div>
+                  <div className="text-[11px] text-outline font-code-inline truncate">
+                    Status: {note.frontmatter.status} • Tags:{' '}
+                    {note.frontmatter.tags.join(', ')}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadNoteMarkdown(note)}
+                  className="px-2.5 py-1 rounded bg-surface-container-high hover:bg-secondary hover:text-on-secondary text-secondary border border-secondary/30 font-label-sm text-[11px] font-semibold transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[14px]">
+                    download
+                  </span>
+                  <span>Export .md</span>
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -158,3 +314,4 @@ export const VaultPreferencesView: React.FC<VaultPreferencesViewProps> = ({
     </div>
   );
 };
+

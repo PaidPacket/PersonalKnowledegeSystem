@@ -5,6 +5,7 @@ interface LeftNavigationRailProps {
   activeView: WorkspaceView;
   onSelectView: (view: WorkspaceView) => void;
   onCreateFolder: () => void;
+  onOpenPresentationDeck?: () => void;
 }
 
 const NAV_ITEMS: Array<{
@@ -23,6 +24,7 @@ export const LeftNavigationRail: React.FC<LeftNavigationRailProps> = ({
   activeView,
   onSelectView,
   onCreateFolder,
+  onOpenPresentationDeck,
 }) => {
   return (
     <aside className="fixed left-0 top-14 bottom-0 w-64 bg-surface-container-lowest border-r border-outline-variant/30 z-40 flex flex-col justify-between py-space-md select-none">
@@ -67,7 +69,26 @@ export const LeftNavigationRail: React.FC<LeftNavigationRailProps> = ({
         </nav>
       </div>
 
-      <div className="px-space-sm pt-space-sm border-t border-outline-variant/20">
+      <div className="px-space-sm pt-space-sm border-t border-outline-variant/20 flex flex-col gap-1.5">
+        {onOpenPresentationDeck && (
+          <button
+            type="button"
+            onClick={onOpenPresentationDeck}
+            className="w-full flex items-center justify-between px-space-sm py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors cursor-pointer border border-primary/30 hover:border-primary group"
+            title="Open College Project 11-Slide Presentation (PPTX)"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px] text-primary group-hover:scale-110 transition-transform">
+                slideshow
+              </span>
+              <span className="font-medium text-primary">Presentation Deck</span>
+            </div>
+            <span className="font-code-inline text-[10px] text-primary bg-primary/10 px-1 py-0.5 rounded border border-primary/20">
+              11 Slides
+            </span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => onSelectView('vault-settings')}

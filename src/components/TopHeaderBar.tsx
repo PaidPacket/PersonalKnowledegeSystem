@@ -13,8 +13,17 @@ interface TopHeaderBarProps {
   onSelectView: (view: WorkspaceView) => void;
   onOpenCommandPalette: () => void;
   onOpenThinkingModal: () => void;
+  onOpenPresentationDeck: () => void;
   syncStatusText: string;
   noteCount: number;
+  firebaseUser?: {
+    uid: string;
+    displayName: string | null;
+    email: string | null;
+    photoURL: string | null;
+  } | null;
+  onSignInFirebase?: () => void;
+  onSignOutFirebase?: () => void;
 }
 
 const LOGO_URL =
@@ -29,8 +38,12 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
   onSelectView,
   onOpenCommandPalette,
   onOpenThinkingModal,
+  onOpenPresentationDeck,
   syncStatusText,
   noteCount,
+  firebaseUser,
+  onSignInFirebase,
+  onSignOutFirebase,
 }) => {
   const [logoError, setLogoError] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
@@ -119,11 +132,25 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
                 type="button"
                 onClick={() => {
                   setVaultMenuOpen(false);
+                  onOpenPresentationDeck();
+                }}
+                className="w-full px-3 py-1.5 text-left text-xs hover:bg-surface-container-highest flex items-center justify-between text-on-surface"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px] text-secondary">slideshow</span>
+                  <span>11-Slide Project Deck</span>
+                </span>
+                <span className="font-code-inline text-[10px] text-secondary">PPTX</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setVaultMenuOpen(false);
                   onSelectView('vault-settings');
                 }}
                 className="w-full px-3 py-1.5 text-left text-xs hover:bg-surface-container-highest flex items-center justify-between text-on-surface-variant"
               >
-                <span>Vault Storage & Backup...</span>
+                <span>Firebase &amp; Vault Storage...</span>
                 <span className="material-symbols-outlined text-[14px]">settings</span>
               </button>
             </div>
@@ -156,9 +183,24 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
         </button>
       </div>
 
-      {/* Right Zone: Workspace Mode Shortcuts + Sync Indicator + Profile */}
+      {/* Right Zone: Workspace Mode Shortcuts + Firebase Sync Indicator + Profile */}
       <div className="flex items-center gap-space-md">
         <div className="flex items-center gap-space-xs text-outline-variant">
+          <button
+            type="button"
+            onClick={onOpenPresentationDeck}
+            title="Project Presentation Deck (11 Slides PPTX)"
+            aria-label="Project Presentation Deck"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#131b2e] hover:bg-[#222a3d] text-[#4edea3] border border-[#4edea3]/40 transition-colors cursor-pointer shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              slideshow
+            </span>
+            <span className="font-label-sm text-[11px] font-semibold hidden md:inline whitespace-nowrap">
+              Presentation Deck
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={onOpenThinkingModal}
@@ -206,16 +248,72 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
 
         <div className="h-4 w-[1px] bg-outline-variant/40" />
 
-        <div className="flex items-center gap-1.5 px-space-xs">
-          <span className="w-2 h-2 rounded-full bg-secondary inline-block" />
-          <span className="font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap">
-            {syncStatusText}
-          </span>
-        </div>
+        {/* Firebase Firestore Cloud Connectivity Button / Status */}
+        {firebaseUser ? (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onSelectView('vault-settings')}
+              title={`Connected to Firebase Firestore as ${firebaseUser.email || firebaseUser.displayName || 'Authenticated User'}`}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-secondary-container/20 hover:bg-secondary-container/30 border border-secondary/30 text-secondary transition-colors cursor-pointer"
+            >
+              <span className="w-2 h-2 rounded-full bg-secondary inline-block" />
+              <span className="font-label-sm text-[11px] font-medium whitespace-nowrap">
+                {syncStatusText}
+              </span>
+            </button>
+            {onSignOutFirebase && (
+              <button
+                type="button"
+                onClick={onSignOutFirebase}
+                title="Disconnect Firebase Cloud Sync"
+                aria-label="Disconnect Firebase Cloud Sync"
+                className="p-1 rounded bg-surface-container-low hover:bg-surface-container-high text-outline hover:text-on-surface border border-outline-variant/30 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  logout
+                </span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-1.5 px-space-xs">
+              <span className="w-2 h-2 rounded-full bg-secondary inline-block" />
+              <span className="font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap">
+                {syncStatusText}
+              </span>
+            </div>
+            {onSignInFirebase && (
+              <button
+                type="button"
+                onClick={onSignInFirebase}
+                aria-label="Connect Firebase Cloud Sync"
+                title="Sign in with Google to sync notes with Firebase Firestore"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-low hover:bg-surface-container-high text-on-surface border border-primary/40 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[15px] text-primary">
+                  cloud_sync
+                </span>
+                <span className="font-label-sm text-[11px] font-medium whitespace-nowrap">
+                  Connect Firebase
+                </span>
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="h-4 w-[1px] bg-outline-variant/40" />
 
-        {!avatarError ? (
+        {firebaseUser?.photoURL && !avatarError ? (
+          <img
+            alt={firebaseUser.displayName || 'Profile'}
+            className="w-7 h-7 rounded-full object-cover ring-1 ring-secondary/50"
+            src={firebaseUser.photoURL}
+            referrerPolicy="no-referrer"
+            onError={() => setAvatarError(true)}
+          />
+        ) : !avatarError ? (
           <img
             alt="Profile"
             className="w-7 h-7 rounded-full object-cover ring-1 ring-outline-variant/40"
@@ -228,10 +326,13 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
             aria-label="Profile"
             className="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center text-xs font-medium ring-1 ring-outline-variant/40"
           >
-            EK
+            {firebaseUser?.displayName
+              ? firebaseUser.displayName.slice(0, 2).toUpperCase()
+              : 'EK'}
           </div>
         )}
       </div>
     </header>
   );
 };
+

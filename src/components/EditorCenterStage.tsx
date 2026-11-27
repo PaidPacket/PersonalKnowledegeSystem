@@ -3,8 +3,11 @@ import {
   FolderRecord,
   NoteFrontmatter,
   NoteRecord,
+  buildCanonicalMarkdownExport,
   computeDocumentMetrics,
   extractWikiLinks,
+  rebuildRawMarkdownFromNote,
+  syncStructuredFieldsFromRawMarkdown,
 } from '../domain/vaultEngine';
 
 interface EditorCenterStageProps {
@@ -41,9 +44,11 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
   highlightedHeading,
 }) => {
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'source'>('edit');
+  const [inlineProseEdit, setInlineProseEdit] = useState(false);
   const [splitPaneOpen, setSplitPaneOpen] = useState(false);
   const [yamlExpanded, setYamlExpanded] = useState(true);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [exportedMdFeedback, setExportedMdFeedback] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState('');
@@ -83,16 +88,49 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
   };
 
   const handleExportMarkdown = () => {
-    const blob = new Blob([activeNote.rawMarkdown], {
+    const canonicalMd = buildCanonicalMarkdownExport(activeNote);
+    const downloadFilename = activeNote.filename.toLowerCase().endsWith('.md')
+      ? activeNote.filename
+      : `${activeNote.filename}.md`;
+    const blob = new Blob([canonicalMd], {
       type: 'text/markdown;charset=utf-8',
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = activeNote.filename;
+    a.download = downloadFilename;
     a.click();
     URL.revokeObjectURL(url);
     setMoreMenuOpen(false);
+    setExportedMdFeedback(true);
+    setTimeout(() => setExportedMdFeedback(false), 1800);
+  };
+
+  const applyStructuredUpdate = (
+    mutator: (prev: NoteRecord) => NoteRecord
+  ) => {
+    onUpdateNote(activeNote.id, (prev) => {
+      const next = mutator(prev);
+      return {
+        ...next,
+        rawMarkdown: rebuildRawMarkdownFromNote(next),
+        updatedAt: 'Just now',
+      };
+    });
+  };
+
+  const insertMarkdownSnippet = (snippet: string) => {
+    setEditorMode('source');
+    onUpdateNote(activeNote.id, (prev) => {
+      const base = prev.rawMarkdown.endsWith('\n')
+        ? prev.rawMarkdown
+        : `${prev.rawMarkdown}\n`;
+      const nextRaw = `${base}${snippet}\n`;
+      return {
+        ...syncStructuredFieldsFromRawMarkdown(prev, nextRaw),
+        updatedAt: 'Just now',
+      };
+    });
   };
 
   const cycleStatus = () => {
@@ -104,10 +142,9 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
     ];
     const next =
       order[(order.indexOf(activeNote.frontmatter.status) + 1) % order.length];
-    onUpdateNote(activeNote.id, (prev) => ({
+    applyStructuredUpdate((prev) => ({
       ...prev,
       frontmatter: { ...prev.frontmatter, status: next },
-      updatedAt: 'Just now',
     }));
   };
 
@@ -115,10 +152,9 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
     const order: NoteFrontmatter['priority'][] = ['high', 'medium', 'low'];
     const next =
       order[(order.indexOf(activeNote.frontmatter.priority) + 1) % order.length];
-    onUpdateNote(activeNote.id, (prev) => ({
+    applyStructuredUpdate((prev) => ({
       ...prev,
       frontmatter: { ...prev.frontmatter, priority: next },
-      updatedAt: 'Just now',
     }));
   };
 
@@ -126,7 +162,7 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
     e.preventDefault();
     const cleaned = newTagInput.trim().replace(/^#/, '');
     if (!cleaned) return;
-    onUpdateNote(activeNote.id, (prev) => ({
+    applyStructuredUpdate((prev) => ({
       ...prev,
       frontmatter: {
         ...prev.frontmatter,
@@ -134,10 +170,22 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
           ? prev.frontmatter.tags
           : [...prev.frontmatter.tags, cleaned],
       },
-      updatedAt: 'Just now',
     }));
     setNewTagInput('');
     setShowAddTag(false);
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    applyStructuredUpdate((prev) => {
+      const remaining = prev.frontmatter.tags.filter((t) => t !== tagToRemove);
+      return {
+        ...prev,
+        frontmatter: {
+          ...prev.frontmatter,
+          tags: remaining.length > 0 ? remaining : ['engineering'],
+        },
+      };
+    });
   };
 
   const handleAddTaskSubmit = (e: React.FormEvent) => {
@@ -259,7 +307,20 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
         </div>
 
         {/* Tab Bar Control Actions */}
-        <div className="flex items-center gap-1 text-outline relative">
+        <div className="flex items-center gap-1.5 text-outline relative">
+          <button
+            type="button"
+            onClick={handleExportMarkdown}
+            aria-label="Export Note as Markdown (.md)"
+            title={`Download ${activeNote.filename} with YAML frontmatter`}
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded bg-secondary-container/20 hover:bg-secondary-container/35 text-secondary border border-secondary/30 text-[11px] font-label-md font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <span className="material-symbols-outlined text-[14px]">
+              {exportedMdFeedback ? 'check' : 'download'}
+            </span>
+            <span>{exportedMdFeedback ? 'Exported .md' : 'Export .md'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setSplitPaneOpen((prev) => !prev)}
@@ -288,7 +349,10 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setEditorMode('preview')}
+              onClick={() => {
+                setInlineProseEdit(false);
+                setEditorMode('preview');
+              }}
               className={`px-2 py-0.5 rounded text-[11px] font-label-md transition-colors cursor-pointer whitespace-nowrap ${
                 editorMode === 'preview'
                   ? 'bg-surface text-on-surface font-medium shadow-sm'
@@ -344,7 +408,7 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onUpdateNote(activeNote.id, (prev) => ({
+                  applyStructuredUpdate((prev) => ({
                     ...prev,
                     bookmarked: !prev.bookmarked,
                   }));
@@ -475,26 +539,110 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
         <div className="flex-1 overflow-y-auto relative px-gutter-desktop py-space-lg scroll-smooth">
           {editorMode === 'source' ? (
             <div className="max-w-[740px] mx-auto space-y-space-md">
-              <div className="flex items-center justify-between bg-surface-container-low px-3 py-2 rounded border border-outline-variant/20">
-                <span className="font-code-inline text-xs text-primary">
-                  Raw Markdown &amp; Frontmatter Source ({activeNote.filename})
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-container-low px-3 py-2 rounded border border-outline-variant/20">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] text-primary">
+                    edit_note
+                  </span>
+                  <span className="font-code-inline text-xs text-primary">
+                    Full Markdown &amp; YAML Frontmatter Editor ({activeNote.filename})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportMarkdown}
+                    className="px-2.5 py-1 rounded bg-secondary-container/25 hover:bg-secondary-container/40 text-secondary border border-secondary/30 text-xs font-medium cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {exportedMdFeedback ? 'check' : 'download'}
+                    </span>
+                    <span>{exportedMdFeedback ? 'Exported .md' : 'Download .md'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('edit')}
+                    className="px-2.5 py-1 rounded bg-primary text-on-primary text-xs font-medium cursor-pointer whitespace-nowrap"
+                  >
+                    Done Editing Source
+                  </button>
+                </div>
+              </div>
+
+              {/* Raw Markdown Quick Syntax Insertion Bar */}
+              <div className="flex flex-wrap items-center gap-1 px-2.5 py-1.5 rounded bg-surface-container-lowest border border-outline-variant/30 text-xs text-on-surface-variant">
                 <button
                   type="button"
-                  onClick={() => setEditorMode('edit')}
-                  className="px-2.5 py-1 rounded bg-primary text-on-primary text-xs font-medium cursor-pointer"
+                  onClick={() => insertMarkdownSnippet('\n## New Section Heading')}
+                  className="px-2 py-0.5 rounded hover:bg-surface-container-high hover:text-on-surface font-code-inline text-[11px] cursor-pointer"
                 >
-                  Done Editing Source
+                  ## H2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdownSnippet('\n### Subsection Heading')}
+                  className="px-2 py-0.5 rounded hover:bg-surface-container-high hover:text-on-surface font-code-inline text-[11px] cursor-pointer"
+                >
+                  ### H3
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdownSnippet('**bold point**')}
+                  className="px-2 py-0.5 rounded hover:bg-surface-container-high hover:text-on-surface font-code-inline text-[11px] cursor-pointer"
+                >
+                  **Bold**
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdownSnippet('*italic emphasis*')}
+                  className="px-2 py-0.5 rounded hover:bg-surface-container-high hover:text-on-surface font-code-inline text-[11px] cursor-pointer"
+                >
+                  *Italic*
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdownSnippet('`inlineCode`')}
+                  className="px-2 py-0.5 rounded hover:bg-surface-container-high hover:text-on-surface font-code-inline text-[11px] cursor-pointer"
+                >
+                  `Code`
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdownSnippet('[[Thread Pools & Executors]]')}
+                  className="px-2 py-0.5 rounded hover:bg-surface-container-high text-primary font-code-inline text-[11px] cursor-pointer"
+                >
+                  [[WikiLink]]
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertMarkdownSnippet('- [ ] Verify concurrency boundary')}
+                  className="px-2 py-0.5 rounded hover:bg-surface-container-high hover:text-on-surface font-code-inline text-[11px] cursor-pointer"
+                >
+                  - [ ] Task
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUpdateNote(activeNote.id, (prev) => ({
+                      ...prev,
+                      rawMarkdown: rebuildRawMarkdownFromNote(prev),
+                      updatedAt: 'Just now',
+                    }));
+                  }}
+                  title="Rebuild canonical YAML frontmatter and Markdown structure"
+                  className="ml-auto px-2 py-0.5 rounded bg-surface-container text-secondary hover:bg-surface-container-high font-code-inline text-[11px] cursor-pointer"
+                >
+                  Format YAML + MD
                 </button>
               </div>
+
               <textarea
                 aria-label="Raw Markdown Source Editor"
                 value={activeNote.rawMarkdown}
                 onChange={(e) => {
                   const val = e.target.value;
                   onUpdateNote(activeNote.id, (prev) => ({
-                    ...prev,
-                    rawMarkdown: val,
+                    ...syncStructuredFieldsFromRawMarkdown(prev, val),
                     updatedAt: 'Just now',
                   }));
                 }}
@@ -533,9 +681,21 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
                         {activeNote.frontmatter.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="px-1.5 py-0.5 rounded bg-surface-container text-primary text-[10px]"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-container text-primary text-[10px]"
                           >
-                            {tag}
+                            <span>{tag}</span>
+                            {editorMode === 'edit' &&
+                              activeNote.frontmatter.tags.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveTag(tag)}
+                                  title={`Remove tag ${tag}`}
+                                  aria-label={`Remove tag ${tag}`}
+                                  className="text-outline hover:text-on-surface cursor-pointer"
+                                >
+                                  ×
+                                </button>
+                              )}
                           </span>
                         ))}
                         {editorMode === 'edit' && !showAddTag && (
@@ -602,44 +762,96 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
 
               {/* Document Header Title */}
               <div className="space-y-space-sm pt-space-xs">
-                <h1 className="font-headline-xl text-headline-xl text-on-surface tracking-tight font-semibold">
-                  {activeNote.title}
-                </h1>
-                {activeNote.id === 'note-virtual-threads' ? (
-                  <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
-                    Java 21 delivers{' '}
-                    <span className="font-medium text-primary">JEP 444</span>,
-                    officially stabilizing user-mode lightweight Virtual Threads.
-                    While conventional platform threads implement a rigid 1:1
-                    mapping with native OS kernel threads, virtual threads
-                    decouple execution context via an M:N scheduling model
-                    orchestrated directly on JVM Carrier Threads backed by
-                    standard{' '}
-                    <code className="font-code-inline text-code-inline px-1 py-0.5 bg-surface-container-high rounded text-primary">
-                      ForkJoinPool
-                    </code>{' '}
-                    instances.
-                  </p>
+                {editorMode === 'edit' && inlineProseEdit ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      aria-label="Edit Note Title"
+                      value={activeNote.title}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        applyStructuredUpdate((prev) => ({
+                          ...prev,
+                          title: val,
+                        }));
+                      }}
+                      className="w-full px-3 py-1.5 rounded bg-surface-container-lowest border border-primary/50 font-headline-xl text-headline-xl text-on-surface font-semibold outline-none"
+                    />
+                    <textarea
+                      aria-label="Edit Note Lead Summary"
+                      value={activeNote.lead}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        applyStructuredUpdate((prev) => ({
+                          ...prev,
+                          lead: val,
+                        }));
+                      }}
+                      rows={3}
+                      className="w-full p-2.5 rounded bg-surface-container-lowest border border-outline-variant/40 focus:border-primary font-body-lg text-body-lg text-on-surface-variant leading-relaxed outline-none"
+                    />
+                  </div>
                 ) : (
-                  <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
-                    {activeNote.lead}
-                  </p>
+                  <>
+                    <h1
+                      onDoubleClick={() => {
+                        if (editorMode === 'edit') setInlineProseEdit(true);
+                      }}
+                      title="Double-click or use Inline Edit button to edit note title & prose"
+                      className="font-headline-xl text-headline-xl text-on-surface tracking-tight font-semibold"
+                    >
+                      {activeNote.title}
+                    </h1>
+                    {activeNote.id === 'note-virtual-threads' &&
+                    activeNote.lead.startsWith('Java 21 delivers JEP 444') ? (
+                      <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                        Java 21 delivers{' '}
+                        <span className="font-medium text-primary">JEP 444</span>,
+                        officially stabilizing user-mode lightweight Virtual Threads.
+                        While conventional platform threads implement a rigid 1:1
+                        mapping with native OS kernel threads, virtual threads
+                        decouple execution context via an M:N scheduling model
+                        orchestrated directly on JVM Carrier Threads backed by
+                        standard{' '}
+                        <code className="font-code-inline text-code-inline px-1 py-0.5 bg-surface-container-high rounded text-primary">
+                          ForkJoinPool
+                        </code>{' '}
+                        instances.
+                      </p>
+                    ) : (
+                      <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                        {activeNote.lead}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Floating Inline Action / Formatting Toolbar */}
               {editorMode === 'edit' && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-surface-container-high rounded shadow-md w-fit text-on-surface-variant">
+                <div className="flex flex-wrap items-center gap-1 px-2 py-1 bg-surface-container-high rounded shadow-md w-fit text-on-surface-variant">
                   <button
                     type="button"
-                    onClick={() => setEditorMode('source')}
+                    onClick={() => setInlineProseEdit((prev) => !prev)}
+                    className={`px-2 py-0.5 rounded text-[11px] font-label-md cursor-pointer transition-colors ${
+                      inlineProseEdit
+                        ? 'bg-primary text-on-primary font-medium'
+                        : 'hover:bg-surface-container hover:text-on-surface text-primary'
+                    }`}
+                  >
+                    {inlineProseEdit ? 'Done Inline Edit' : 'Edit Prose Inline'}
+                  </button>
+                  <span className="w-px h-3 bg-outline-variant/40 mx-0.5" />
+                  <button
+                    type="button"
+                    onClick={() => insertMarkdownSnippet('\n## Architectural Section')}
                     className="px-1.5 py-0.5 hover:bg-surface-container hover:text-on-surface rounded text-[11px] font-label-md cursor-pointer"
                   >
                     H2
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditorMode('source')}
+                    onClick={() => insertMarkdownSnippet('\n### Implementation Detail')}
                     className="px-1.5 py-0.5 hover:bg-surface-container hover:text-on-surface rounded text-[11px] font-label-md cursor-pointer"
                   >
                     H3
@@ -647,7 +859,7 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
                   <span className="w-px h-3 bg-outline-variant/40 mx-0.5" />
                   <button
                     type="button"
-                    onClick={() => setEditorMode('source')}
+                    onClick={() => insertMarkdownSnippet('**bold highlight**')}
                     title="Bold"
                     aria-label="Format Bold"
                     className="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline cursor-pointer"
@@ -658,7 +870,7 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditorMode('source')}
+                    onClick={() => insertMarkdownSnippet('*italic note*')}
                     title="Italic"
                     aria-label="Format Italic"
                     className="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline cursor-pointer"
@@ -669,7 +881,7 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditorMode('source')}
+                    onClick={() => insertMarkdownSnippet('`inlineCode`')}
                     title="Inline Code"
                     aria-label="Format Code"
                     className="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline cursor-pointer"
@@ -680,7 +892,7 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditorMode('source')}
+                    onClick={() => insertMarkdownSnippet('[[Thread Pools & Executors]]')}
                     title="Insert [[WikiLink]]"
                     aria-label="Insert Link"
                     className="p-1 hover:bg-surface-container hover:text-on-surface rounded text-outline cursor-pointer"
@@ -711,6 +923,18 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
                       table_chart
                     </span>
                   </button>
+                  <span className="w-px h-3 bg-outline-variant/40 mx-0.5" />
+                  <button
+                    type="button"
+                    onClick={handleExportMarkdown}
+                    title="Download note as .md file"
+                    className="px-2 py-0.5 rounded bg-secondary-container/20 hover:bg-secondary-container/35 text-secondary text-[11px] font-label-md font-medium cursor-pointer flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">
+                      download
+                    </span>
+                    <span>.md</span>
+                  </button>
                 </div>
               )}
 
@@ -720,25 +944,59 @@ export const EditorCenterStage: React.FC<EditorCenterStageProps> = ({
                   highlightedHeading ? 'ring-1 ring-primary/30 rounded p-2' : ''
                 }`}
               >
-                <h2 className="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">
-                  {activeNote.sectionHeading}
-                </h2>
-                {activeNote.id === 'note-virtual-threads' ? (
-                  <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                    Adopting lightweight concurrency does not mean unbounded
-                    scalability without trade-offs. The dominant hazard in
-                    production migrations is{' '}
-                    <strong className="text-on-surface font-medium">
-                      Carrier Thread Pinning
-                    </strong>
-                    , which happens when a virtual thread halts inside a
-                    synchronized block or native JNI call, prohibiting the
-                    runtime from parking its execution frame.
-                  </p>
+                {editorMode === 'edit' && inlineProseEdit ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      aria-label="Edit Section Heading"
+                      value={activeNote.sectionHeading}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        applyStructuredUpdate((prev) => ({
+                          ...prev,
+                          sectionHeading: val,
+                        }));
+                      }}
+                      className="w-full px-3 py-1 rounded bg-surface-container-lowest border border-primary/50 font-headline-lg text-headline-lg text-on-surface font-semibold outline-none"
+                    />
+                    <textarea
+                      aria-label="Edit Section Body"
+                      value={activeNote.sectionBody}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        applyStructuredUpdate((prev) => ({
+                          ...prev,
+                          sectionBody: val,
+                        }));
+                      }}
+                      rows={3}
+                      className="w-full p-2.5 rounded bg-surface-container-lowest border border-outline-variant/40 focus:border-primary font-body-md text-body-md text-on-surface-variant leading-relaxed outline-none"
+                    />
+                  </div>
                 ) : (
-                  <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                    {activeNote.sectionBody}
-                  </p>
+                  <>
+                    <h2 className="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">
+                      {activeNote.sectionHeading}
+                    </h2>
+                    {activeNote.id === 'note-virtual-threads' &&
+                    activeNote.sectionBody.includes('Carrier Thread Pinning') ? (
+                      <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                        Adopting lightweight concurrency does not mean unbounded
+                        scalability without trade-offs. The dominant hazard in
+                        production migrations is{' '}
+                        <strong className="text-on-surface font-medium">
+                          Carrier Thread Pinning
+                        </strong>
+                        , which happens when a virtual thread halts inside a
+                        synchronized block or native JNI call, prohibiting the
+                        runtime from parking its execution frame.
+                      </p>
+                    ) : (
+                      <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                        {activeNote.sectionBody}
+                      </p>
+                    )}
+                  </>
                 )}
 
                 {/* Checklist */}

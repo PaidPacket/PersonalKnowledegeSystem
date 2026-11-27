@@ -3,26 +3,40 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { User } from 'firebase/auth';
 import {
   CanvasNode,
   FolderRecord,
   NoteRecord,
+  buildCanonicalMarkdownExport,
   computeBacklinks,
   computeDocumentMetrics,
   computeOutgoingLinks,
   extractOutlineHeadings,
   normalizeNoteTitle,
   parseFrontmatterAndBody,
+  rebuildRawMarkdownFromNote,
   resolveWikiLink,
   rewriteLinksOnRename,
   serializeFrontmatterAndBody,
+  syncStructuredFieldsFromRawMarkdown,
 } from './domain/vaultEngine';
 import {
   VaultStateSnapshot,
   loadVaultSnapshotSync,
   saveVaultSnapshot,
 } from './services/vaultStorage';
+import {
+  bootstrapAndSyncUserVault,
+  deleteNoteFromFirestore,
+  signInWithGooglePopup,
+  signOutFirebaseUser,
+  subscribeToFirebaseAuth,
+  subscribeToRemoteVaultNotes,
+  syncNoteToFirestore,
+  syncVaultWorkspaceToFirestore,
+} from './services/firebaseClient';
 import { TopHeaderBar, WorkspaceView } from './components/TopHeaderBar';
 import { LeftNavigationRail } from './components/LeftNavigationRail';
 import { FileExplorerSidebar } from './components/FileExplorerSidebar';
@@ -34,6 +48,7 @@ import { DailyJournalView } from './components/DailyJournalView';
 import { VaultPreferencesView } from './components/VaultPreferencesView';
 import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { HighThinkingModal } from './components/HighThinkingModal';
+import { PresentationDeckModal } from './components/PresentationDeckModal';
 
 export default function App() {
   const [vault, setVault] = useState<VaultStateSnapshot>(() =>
@@ -44,37 +59,233 @@ export default function App() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [thinkingModalOpen, setThinkingModalOpen] = useState(false);
-  const [syncStatusText, setSyncStatusText] = useState('Synced 2m ago');
+  const [presentationOpen, setPresentationOpen] = useState(false);
+  const [syncStatusText, setSyncStatusText] = useState('Local IndexedDB');
   const [highlightedHeading, setHighlightedHeading] = useState<string | null>(
     null
   );
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  const vaultRef = useRef<VaultStateSnapshot>(vault);
+  vaultRef.current = vault;
 
-  // Persist changes to IndexedDB + LocalStorage with batched debounce
+  const activeNote: NoteRecord =
+    vault.notes.find((n) => n.id === vault.activeNoteId) ?? vault.notes[0];
+
+  // Helper to queue a single note write to Firestore if authenticated
+  const queueFirestoreNoteSync = (note: NoteRecord) => {
+    if (!firebaseUser || !isFirebaseReady) return;
+    setSyncStatusText('Syncing Firebase...');
+    syncNoteToFirestore(firebaseUser.uid, note)
+      .then(() => {
+        setSyncStatusText('Firebase Synced');
+      })
+      .catch(() => {
+        setSyncStatusText('Sync Error');
+      });
+  };
+
+  // Subscribe to Firebase Authentication and attach Firestore real-time listener when signed in
+  useEffect(() => {
+    let unsubscribeRemoteNotes: (() => void) | null = null;
+
+    const unsubscribeAuth = subscribeToFirebaseAuth(async (user) => {
+      setFirebaseUser(user);
+      if (unsubscribeRemoteNotes) {
+        unsubscribeRemoteNotes();
+        unsubscribeRemoteNotes = null;
+      }
+
+      if (!user) {
+        setIsFirebaseReady(false);
+        setSyncStatusText('Local IndexedDB');
+        return;
+      }
+
+      setSyncStatusText('Connecting Firebase...');
+      try {
+        const merged = await bootstrapAndSyncUserVault(user, vaultRef.current);
+        setVault((prev) => ({
+          ...prev,
+          notes: merged.notes,
+          activeNoteId: merged.activeNoteId || prev.activeNoteId,
+          openTabIds:
+            merged.openTabIds && merged.openTabIds.length > 0
+              ? merged.openTabIds
+              : prev.openTabIds,
+        }));
+        setIsFirebaseReady(true);
+        setSyncStatusText('Firebase Synced');
+
+        unsubscribeRemoteNotes = subscribeToRemoteVaultNotes(
+          user.uid,
+          (remoteDocs) => {
+            setVault((prev) => {
+              const localMap = new Map<string, NoteRecord>(
+                prev.notes.map((n) => [n.id, n])
+              );
+              const nextNotes = [...prev.notes];
+
+              for (const remote of remoteDocs) {
+                const existing = localMap.get(remote.id);
+                const fm = {
+                  tags: remote.tags,
+                  status: remote.status,
+                  priority: remote.priority,
+                  created: remote.created,
+                  ...(existing?.frontmatter.aliases
+                    ? { aliases: existing.frontmatter.aliases }
+                    : {}),
+                };
+                const baseNote: NoteRecord = {
+                  ...(existing ?? {
+                    id: remote.id,
+                    folderId: remote.folderId,
+                    filename: remote.filename,
+                    title: remote.title,
+                    lead: remote.lead,
+                    frontmatter: fm,
+                    sectionHeading: remote.sectionHeading,
+                    sectionBody: remote.sectionBody,
+                    checklist: [],
+                    wikiParagraph: remote.wikiParagraph,
+                    rawMarkdown: remote.rawMarkdown,
+                    updatedAt: 'Firebase Synced',
+                  }),
+                  id: remote.id,
+                  folderId: remote.folderId,
+                  filename: remote.filename,
+                  title: remote.title,
+                  lead: remote.lead,
+                  frontmatter: fm,
+                  sectionHeading: remote.sectionHeading,
+                  sectionBody: remote.sectionBody,
+                  wikiParagraph: remote.wikiParagraph,
+                  rawMarkdown: remote.rawMarkdown,
+                  bookmarked: remote.bookmarked,
+                };
+                const hydrated = syncStructuredFieldsFromRawMarkdown(
+                  baseNote,
+                  remote.rawMarkdown
+                );
+                const idx = nextNotes.findIndex((n) => n.id === remote.id);
+                if (idx !== -1) {
+                  nextNotes[idx] = hydrated;
+                } else {
+                  nextNotes.push(hydrated);
+                }
+              }
+
+              return {
+                ...prev,
+                notes: nextNotes,
+              };
+            });
+            setSyncStatusText('Firebase Synced');
+          }
+        );
+      } catch (err) {
+        console.error('Firebase bootstrap error:', err);
+        setSyncStatusText('Firebase Auth Error');
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeRemoteNotes) {
+        unsubscribeRemoteNotes();
+      }
+    };
+  }, []);
+
+  // Persist changes to IndexedDB + LocalStorage and sync active workspace metadata to Firestore
   useEffect(() => {
     const timer = window.setTimeout(() => {
       saveVaultSnapshot(vault).then((res) => {
-        if (res.ok) {
-          setSyncStatusText('Synced 2m ago');
+        if (res.ok && !firebaseUser) {
+          setSyncStatusText('Local IndexedDB');
         }
       });
-    }, 180);
+      if (firebaseUser && isFirebaseReady) {
+        syncVaultWorkspaceToFirestore(firebaseUser.uid, vault).catch(() => {});
+      }
+    }, 220);
     return () => window.clearTimeout(timer);
-  }, [vault]);
+  }, [vault, firebaseUser, isFirebaseReady]);
 
-  // Global keyboard shortcuts (Cmd/Ctrl+K for Command Palette)
+  // Global keyboard shortcuts (Cmd/Ctrl+K Command Palette, Cmd/Ctrl+P Presentation, Cmd/Ctrl+S Export .md)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setCommandPaletteOpen((prev) => !prev);
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setPresentationOpen((prev) => !prev);
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        const currentNote =
+          vaultRef.current.notes.find(
+            (n) => n.id === vaultRef.current.activeNoteId
+          ) ?? vaultRef.current.notes[0];
+        if (currentNote) {
+          const canonicalMd = buildCanonicalMarkdownExport(currentNote);
+          const safeFilename = currentNote.filename
+            .toLowerCase()
+            .endsWith('.md')
+            ? currentNote.filename
+            : `${currentNote.title || 'Untitled Note'}.md`;
+          const blob = new Blob([canonicalMd], {
+            type: 'text/markdown;charset=utf-8',
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = safeFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const activeNote: NoteRecord =
-    vault.notes.find((n) => n.id === vault.activeNoteId) ?? vault.notes[0];
+  const handleSignInFirebase = async () => {
+    try {
+      setSyncStatusText('Signing in...');
+      await signInWithGooglePopup();
+    } catch (err) {
+      console.error('Firebase Google Sign-In cancelled or failed:', err);
+      setSyncStatusText(firebaseUser ? 'Firebase Synced' : 'Local IndexedDB');
+    }
+  };
+
+  const handleSignOutFirebase = async () => {
+    try {
+      await signOutFirebaseUser();
+      setSyncStatusText('Local IndexedDB');
+    } catch (err) {
+      console.error('Firebase sign-out error:', err);
+    }
+  };
+
+  const handleForceCloudSync = async () => {
+    if (!firebaseUser) return;
+    setSyncStatusText('Syncing Firebase...');
+    try {
+      await syncVaultWorkspaceToFirestore(firebaseUser.uid, vault);
+      for (const note of vault.notes) {
+        await syncNoteToFirestore(firebaseUser.uid, note);
+      }
+      setSyncStatusText('Firebase Synced');
+    } catch (err) {
+      console.error('Manual cloud sync error:', err);
+      setSyncStatusText('Sync Error');
+    }
+  };
 
   const openTabs: NoteRecord[] = vault.openTabIds
     .map((id) => vault.notes.find((n) => n.id === id))
@@ -140,12 +351,18 @@ export default function App() {
       updatedAt: 'Just now',
     };
 
+    const syncedNewNote: NoteRecord = {
+      ...newNote,
+      rawMarkdown: rebuildRawMarkdownFromNote(newNote),
+    };
+
     setVault((prev) => ({
       ...prev,
-      notes: [...prev.notes, newNote],
+      notes: [...prev.notes, syncedNewNote],
       openTabIds: [...prev.openTabIds, newId],
       activeNoteId: newId,
     }));
+    queueFirestoreNoteSync(syncedNewNote);
     setActiveView('markdown-editor');
   };
 
@@ -193,7 +410,7 @@ export default function App() {
     };
     const body = `# ${title}\n\nLinked with [[Virtual Threads & Loom]] and [[Thread Pools & Executors]].`;
 
-    const newNote: NoteRecord = {
+    const draftNote: NoteRecord = {
       id: newId,
       folderId,
       filename,
@@ -216,6 +433,11 @@ export default function App() {
       updatedAt: 'Just now',
     };
 
+    const newNote: NoteRecord = {
+      ...draftNote,
+      rawMarkdown: rebuildRawMarkdownFromNote(draftNote),
+    };
+
     setVault((prev) => ({
       ...prev,
       folders: prev.folders.map((f) =>
@@ -227,6 +449,7 @@ export default function App() {
       openTabIds: [...prev.openTabIds, newId],
       activeNoteId: newId,
     }));
+    queueFirestoreNoteSync(newNote);
     setActiveView('markdown-editor');
   };
 
@@ -247,54 +470,78 @@ export default function App() {
   };
 
   const handleToggleChecklistItem = (noteId: string, checklistId: string) => {
+    let updatedTarget: NoteRecord | null = null;
     setVault((prev) => ({
       ...prev,
-      notes: prev.notes.map((n) =>
-        n.id === noteId
-          ? {
-              ...n,
-              updatedAt: 'Just now',
-              checklist: n.checklist.map((item) =>
-                item.id === checklistId
-                  ? { ...item, checked: !item.checked }
-                  : item
-              ),
-            }
-          : n
-      ),
+      notes: prev.notes.map((n) => {
+        if (n.id !== noteId) return n;
+        const nextNote: NoteRecord = {
+          ...n,
+          updatedAt: 'Just now',
+          checklist: n.checklist.map((item) =>
+            item.id === checklistId
+              ? { ...item, checked: !item.checked }
+              : item
+          ),
+        };
+        updatedTarget = {
+          ...nextNote,
+          rawMarkdown: rebuildRawMarkdownFromNote(nextNote),
+        };
+        return updatedTarget;
+      }),
     }));
+    if (updatedTarget) {
+      queueFirestoreNoteSync(updatedTarget);
+    }
   };
 
   const handleAddChecklistItem = (noteId: string, text: string) => {
+    let updatedTarget: NoteRecord | null = null;
     setVault((prev) => ({
       ...prev,
-      notes: prev.notes.map((n) =>
-        n.id === noteId
-          ? {
-              ...n,
-              updatedAt: 'Just now',
-              checklist: [
-                ...n.checklist,
-                {
-                  id: `chk-${Date.now()}`,
-                  text,
-                  checked: false,
-                },
-              ],
-            }
-          : n
-      ),
+      notes: prev.notes.map((n) => {
+        if (n.id !== noteId) return n;
+        const nextNote: NoteRecord = {
+          ...n,
+          updatedAt: 'Just now',
+          checklist: [
+            ...n.checklist,
+            {
+              id: `chk-${Date.now()}`,
+              text,
+              checked: false,
+            },
+          ],
+        };
+        updatedTarget = {
+          ...nextNote,
+          rawMarkdown: rebuildRawMarkdownFromNote(nextNote),
+        };
+        return updatedTarget;
+      }),
     }));
+    if (updatedTarget) {
+      queueFirestoreNoteSync(updatedTarget);
+    }
   };
 
   const handleUpdateNote = (
     noteId: string,
     updater: (prev: NoteRecord) => NoteRecord
   ) => {
+    let updatedTarget: NoteRecord | null = null;
     setVault((prev) => ({
       ...prev,
-      notes: prev.notes.map((n) => (n.id === noteId ? updater(n) : n)),
+      notes: prev.notes.map((n) => {
+        if (n.id !== noteId) return n;
+        updatedTarget = updater(n);
+        return updatedTarget;
+      }),
     }));
+    if (updatedTarget) {
+      queueFirestoreNoteSync(updatedTarget);
+    }
   };
 
   const handleRenameNote = (noteId: string, newTitleOrFilename: string) => {
@@ -302,6 +549,7 @@ export default function App() {
     if (!cleanBase) return;
     const newFilename = `${cleanBase}.md`;
 
+    const changedNotes: NoteRecord[] = [];
     setVault((prev) => {
       const target = prev.notes.find((n) => n.id === noteId);
       if (!target) return prev;
@@ -309,22 +557,35 @@ export default function App() {
 
       const updatedNotes = prev.notes.map((n) => {
         if (n.id === noteId) {
-          return {
+          const renamed: NoteRecord = {
             ...n,
             filename: newFilename,
             title: cleanBase,
             updatedAt: 'Just now',
           };
+          const synced: NoteRecord = {
+            ...renamed,
+            rawMarkdown: rebuildRawMarkdownFromNote(renamed),
+          };
+          changedNotes.push(synced);
+          return synced;
         }
-        return {
-          ...n,
-          wikiParagraph: rewriteLinksOnRename(
-            n.wikiParagraph,
-            oldBase,
-            cleanBase
-          ),
-          rawMarkdown: rewriteLinksOnRename(n.rawMarkdown, oldBase, cleanBase),
-        };
+        const nextWiki = rewriteLinksOnRename(
+          n.wikiParagraph,
+          oldBase,
+          cleanBase
+        );
+        const nextRaw = rewriteLinksOnRename(n.rawMarkdown, oldBase, cleanBase);
+        if (nextWiki !== n.wikiParagraph || nextRaw !== n.rawMarkdown) {
+          const updatedRef: NoteRecord = {
+            ...n,
+            wikiParagraph: nextWiki,
+            rawMarkdown: nextRaw,
+          };
+          changedNotes.push(updatedRef);
+          return updatedRef;
+        }
+        return n;
       });
 
       return {
@@ -332,9 +593,14 @@ export default function App() {
         notes: updatedNotes,
       };
     });
+
+    for (const cn of changedNotes) {
+      queueFirestoreNoteSync(cn);
+    }
   };
 
   const handleDeleteNote = (noteId: string) => {
+    if (vault.notes.length <= 1) return;
     setVault((prev) => {
       if (prev.notes.length <= 1) return prev;
       const nextNotes = prev.notes.filter((n) => n.id !== noteId);
@@ -349,6 +615,9 @@ export default function App() {
         activeNoteId: nextActive,
       };
     });
+    if (firebaseUser && isFirebaseReady) {
+      deleteNoteFromFirestore(firebaseUser.uid, noteId).catch(() => {});
+    }
   };
 
   const handleAddCanvasNode = (newNode: CanvasNode, connectFromId?: string) => {
@@ -379,37 +648,46 @@ export default function App() {
   };
 
   const handleAddDailyEntry = (entryText: string) => {
+    let updatedDaily: NoteRecord | null = null;
     setVault((prev) => ({
       ...prev,
-      notes: prev.notes.map((n) =>
-        n.isDailyNote
-          ? {
-              ...n,
-              updatedAt: 'Just now',
-              checklist: [
-                ...n.checklist,
-                {
-                  id: `dj-${Date.now()}`,
-                  text: entryText,
-                  checked: false,
-                },
-              ],
-            }
-          : n
-      ),
+      notes: prev.notes.map((n) => {
+        if (!n.isDailyNote) return n;
+        const nextDaily: NoteRecord = {
+          ...n,
+          updatedAt: 'Just now',
+          checklist: [
+            ...n.checklist,
+            {
+              id: `dj-${Date.now()}`,
+              text: entryText,
+              checked: false,
+            },
+          ],
+        };
+        updatedDaily = {
+          ...nextDaily,
+          rawMarkdown: rebuildRawMarkdownFromNote(nextDaily),
+        };
+        return updatedDaily;
+      }),
     }));
+    if (updatedDaily) {
+      queueFirestoreNoteSync(updatedDaily);
+    }
   };
 
   const handleImportMarkdownNote = (filename: string, rawMarkdown: string) => {
     const { frontmatter, body } = parseFrontmatterAndBody(rawMarkdown);
     const cleanTitle = normalizeNoteTitle(filename);
     const newId = `note-${Date.now()}`;
-    const newNote: NoteRecord = {
+    const baseNote: NoteRecord = {
       id: newId,
       folderId: 'folder-02-concurrency',
       filename,
       title: cleanTitle,
-      lead: body.split(/\r?\n/).find((l) => l && !l.startsWith('#')) || cleanTitle,
+      lead:
+        body.split(/\r?\n/).find((l) => l && !l.startsWith('#')) || cleanTitle,
       frontmatter,
       sectionHeading: 'Imported Specification',
       sectionBody: body,
@@ -418,12 +696,17 @@ export default function App() {
       rawMarkdown: serializeFrontmatterAndBody(frontmatter, body),
       updatedAt: 'Just now',
     };
+    const newNote = syncStructuredFieldsFromRawMarkdown(
+      baseNote,
+      baseNote.rawMarkdown
+    );
     setVault((prev) => ({
       ...prev,
       notes: [...prev.notes, newNote],
       openTabIds: [...prev.openTabIds, newId],
       activeNoteId: newId,
     }));
+    queueFirestoreNoteSync(newNote);
   };
 
   const handleExportVaultJson = () => {
@@ -452,8 +735,21 @@ export default function App() {
         onSelectView={setActiveView}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
         onOpenThinkingModal={() => setThinkingModalOpen(true)}
+        onOpenPresentationDeck={() => setPresentationOpen(true)}
         syncStatusText={syncStatusText}
         noteCount={vault.notes.length}
+        firebaseUser={
+          firebaseUser
+            ? {
+                uid: firebaseUser.uid,
+                displayName: firebaseUser.displayName,
+                email: firebaseUser.email,
+                photoURL: firebaseUser.photoURL,
+              }
+            : null
+        }
+        onSignInFirebase={handleSignInFirebase}
+        onSignOutFirebase={handleSignOutFirebase}
       />
 
       {/* Outer Fixed Left Navigation Rail */}
@@ -461,6 +757,7 @@ export default function App() {
         activeView={activeView}
         onSelectView={setActiveView}
         onCreateFolder={handleCreateFolder}
+        onOpenPresentationDeck={() => setPresentationOpen(true)}
       />
 
       {/* Main Content Container Offset by Left Navigation Rail */}
@@ -563,6 +860,18 @@ export default function App() {
                 onImportMarkdownNote={handleImportMarkdownNote}
                 onExportVaultJson={handleExportVaultJson}
                 onOpenThinkingModal={() => setThinkingModalOpen(true)}
+                firebaseUser={
+                  firebaseUser
+                    ? {
+                        uid: firebaseUser.uid,
+                        displayName: firebaseUser.displayName,
+                        email: firebaseUser.email,
+                      }
+                    : null
+                }
+                onSignInFirebase={handleSignInFirebase}
+                onSignOutFirebase={handleSignOutFirebase}
+                onForceCloudSync={handleForceCloudSync}
               />
             )}
           </div>
@@ -578,6 +887,7 @@ export default function App() {
         onCreateNote={() => handleCreateNote('folder-02-concurrency')}
         onSelectView={setActiveView}
         onOpenThinkingModal={() => setThinkingModalOpen(true)}
+        onOpenPresentationDeck={() => setPresentationOpen(true)}
       />
 
       {/* High-Thinking Synthesis Modal (gemini-4-argon + ThinkingLevel.HIGH) */}
@@ -587,6 +897,13 @@ export default function App() {
         outgoingTitles={outgoingLinks.map((l) => l.title)}
         onClose={() => setThinkingModalOpen(false)}
       />
+
+      {/* 11-Slide College Software Engineering Presentation Deck */}
+      <PresentationDeckModal
+        isOpen={presentationOpen}
+        onClose={() => setPresentationOpen(false)}
+      />
     </div>
   );
 }
+

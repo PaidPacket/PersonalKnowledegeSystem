@@ -374,6 +374,197 @@ export function serializeFrontmatterAndBody(
 }
 
 /**
+ * Rebuilds a note's complete canonical `rawMarkdown` (YAML frontmatter + Markdown body)
+ * whenever structured fields (title, lead, frontmatter, sectionHeading, sectionBody, checklist,
+ * codeBlock, comparisonTable, wikiParagraph, callout) are edited in the visual editor.
+ */
+export function rebuildRawMarkdownFromNote(note: NoteRecord): string {
+  const bodyBlocks: string[] = [];
+
+  bodyBlocks.push(`# ${note.title}`);
+  if (note.lead.trim()) {
+    bodyBlocks.push('', note.lead.trim());
+  }
+
+  if (note.sectionHeading.trim()) {
+    bodyBlocks.push('', `## ${note.sectionHeading.trim()}`);
+  }
+  if (note.sectionBody.trim()) {
+    bodyBlocks.push('', note.sectionBody.trim());
+  }
+
+  if (note.checklist.length > 0) {
+    bodyBlocks.push('');
+    for (const item of note.checklist) {
+      const suffix = item.codeInline ? ` \`${item.codeInline}\`` : '';
+      bodyBlocks.push(`- [${item.checked ? 'x' : ' '}] ${item.text}${suffix}`);
+    }
+  }
+
+  if (note.codeBlock && note.codeBlock.code.trim()) {
+    bodyBlocks.push(
+      '',
+      `### ${note.codeBlock.title}`,
+      '',
+      `\`\`\`${note.codeBlock.language}`,
+      note.codeBlock.code,
+      '```'
+    );
+  }
+
+  if (note.comparisonTable && note.comparisonTable.rows.length > 0) {
+    const [h0, h1, h2] = note.comparisonTable.headers;
+    bodyBlocks.push(
+      '',
+      `### ${note.comparisonTable.title}`,
+      '',
+      `| ${h0} | ${h1} | ${h2} |`,
+      '| :--- | :--- | :--- |'
+    );
+    for (const r of note.comparisonTable.rows) {
+      bodyBlocks.push(`| ${r.metric} | ${r.baseline} | ${r.highlight} |`);
+    }
+  }
+
+  if (note.wikiParagraph.trim()) {
+    bodyBlocks.push('', note.wikiParagraph.trim());
+  }
+
+  if (note.callout && note.callout.body.trim()) {
+    bodyBlocks.push(
+      '',
+      `> [!TIP] ${note.callout.title}`,
+      `> ${note.callout.body.trim()}`
+    );
+  }
+
+  return serializeFrontmatterAndBody(
+    note.frontmatter,
+    `${bodyBlocks.join('\n')}\n`
+  );
+}
+
+/**
+ * Parses a raw Markdown document (with optional YAML frontmatter) and synchronizes
+ * structured `NoteRecord` fields (`frontmatter`, `title`, `lead`, `sectionHeading`,
+ * `sectionBody`, `checklist`, `wikiParagraph`) so edits in Raw MD mode immediately
+ * reflect in the visual editor, outline, backlinks, and `.md` export.
+ */
+export function syncStructuredFieldsFromRawMarkdown(
+  prev: NoteRecord,
+  nextRawMarkdown: string
+): NoteRecord {
+  const { frontmatter, body } = parseFrontmatterAndBody(
+    nextRawMarkdown,
+    prev.frontmatter
+  );
+
+  const lines = body.split(/\r?\n/);
+  let nextTitle = prev.title;
+  let nextLead = prev.lead;
+  let nextSectionHeading = prev.sectionHeading;
+  let nextSectionBody = prev.sectionBody;
+  let nextWikiParagraph = prev.wikiParagraph;
+  const parsedChecklist: ChecklistItem[] = [];
+
+  let h1Found = false;
+  let h2Found = false;
+  const leadLines: string[] = [];
+  const sectionLines: string[] = [];
+  const wikiLines: string[] = [];
+  let inCodeFence = false;
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (trimmed.startsWith('```')) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    const h1Match = /^#\s+(.+)$/.exec(trimmed);
+    if (h1Match && !h1Found) {
+      nextTitle = h1Match[1].trim();
+      h1Found = true;
+      continue;
+    }
+
+    const h2Match = /^##\s+(.+)$/.exec(trimmed);
+    if (h2Match && !h2Found) {
+      nextSectionHeading = h2Match[1].trim();
+      h2Found = true;
+      continue;
+    }
+
+    if (trimmed.startsWith('### ') || trimmed.startsWith('|') || trimmed.startsWith('>')) {
+      continue;
+    }
+
+    const checkMatch = /^-\s*\[([ xX])\]\s+(.+)$/.exec(trimmed);
+    if (checkMatch) {
+      const checked = checkMatch[1].toLowerCase() === 'x';
+      const itemText = checkMatch[2].trim();
+      const existingItem = prev.checklist[parsedChecklist.length];
+      parsedChecklist.push({
+        id: existingItem?.id ?? `chk-raw-${parsedChecklist.length + 1}`,
+        text: itemText,
+        checked,
+      });
+      continue;
+    }
+
+    if (trimmed.includes('[[') && trimmed.includes(']]')) {
+      wikiLines.push(trimmed);
+      continue;
+    }
+
+    if (trimmed.length > 0) {
+      if (!h2Found && h1Found) {
+        leadLines.push(trimmed);
+      } else if (h2Found && parsedChecklist.length === 0) {
+        sectionLines.push(trimmed);
+      }
+    }
+  }
+
+  if (leadLines.length > 0) {
+    nextLead = leadLines.join(' ');
+  }
+  if (sectionLines.length > 0) {
+    nextSectionBody = sectionLines.join(' ');
+  }
+  if (wikiLines.length > 0) {
+    nextWikiParagraph = wikiLines.join(' ');
+  }
+
+  return {
+    ...prev,
+    title: nextTitle,
+    lead: nextLead,
+    frontmatter,
+    sectionHeading: nextSectionHeading,
+    sectionBody: nextSectionBody,
+    checklist: parsedChecklist.length > 0 ? parsedChecklist : prev.checklist,
+    wikiParagraph: nextWikiParagraph,
+    rawMarkdown: nextRawMarkdown,
+  };
+}
+
+/**
+ * Guarantees that an exported `.md` document contains complete YAML frontmatter
+ * and the latest Markdown body.
+ */
+export function buildCanonicalMarkdownExport(note: NoteRecord): string {
+  const trimmed = (note.rawMarkdown || '').trimStart();
+  if (trimmed.startsWith('---\n') || trimmed.startsWith('---\r\n')) {
+    return note.rawMarkdown.endsWith('\n')
+      ? note.rawMarkdown
+      : `${note.rawMarkdown}\n`;
+  }
+  return rebuildRawMarkdownFromNote(note);
+}
+
+/**
  * Computes all incoming backlinks pointing to `targetNote` from other notes in the vault.
  */
 export function computeBacklinks(

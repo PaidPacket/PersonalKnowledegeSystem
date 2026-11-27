@@ -18,6 +18,27 @@ async function startServer() {
     res.json({ status: 'ok' });
   });
 
+  // Direct PPTX file download endpoint
+  app.get(
+    [
+      '/api/download-presentation',
+      '/download/presentation.pptx',
+      '/Knowledge_Management_Platform_Presentation.pptx',
+    ],
+    (_req, res) => {
+      const filePath = path.join(
+        __dirname,
+        'public',
+        'Knowledge_Management_Platform_Presentation.pptx'
+      );
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      );
+      res.download(filePath, 'Knowledge_Management_Platform_Presentation.pptx');
+    }
+  );
+
   // Server-side High-Thinking Knowledge Synthesis endpoint using gemini-4-argon + ThinkingLevel.HIGH
   app.post('/api/ai/thinking', async (req, res) => {
     const body = (req.body || {}) as Record<string, unknown>;

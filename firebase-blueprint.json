@@ -1,0 +1,192 @@
+{
+  "entities": {
+    "UserVault": {
+      "title": "UserVault",
+      "description": "Root knowledge vault configuration and workspace state owned by an authenticated user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the vault owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "vaultName": {
+          "type": "string",
+          "description": "Display name of the knowledge vault.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "activeNoteId": {
+          "type": "string",
+          "description": "ID of the currently active note in the editor.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "openTabIds": {
+          "type": "array",
+          "description": "Bounded list of open tab note IDs (maximum 25).",
+          "maxLength": 25
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "vaultName",
+        "activeNoteId",
+        "openTabIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "VaultNote": {
+      "title": "VaultNote",
+      "description": "Individual Markdown note with YAML frontmatter and structured knowledge blocks.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable permanent note identifier matching the document ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the note owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "folderId": {
+          "type": "string",
+          "description": "Parent folder identifier.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "filename": {
+          "type": "string",
+          "description": "Canonical Markdown filename ending in .md.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "title": {
+          "type": "string",
+          "description": "Note H1 display title.",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "lead": {
+          "type": "string",
+          "description": "Lead summary paragraph.",
+          "minLength": 0,
+          "maxLength": 2000
+        },
+        "sectionHeading": {
+          "type": "string",
+          "description": "Primary H2 section heading.",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "sectionBody": {
+          "type": "string",
+          "description": "Primary H2 section prose.",
+          "minLength": 0,
+          "maxLength": 5000
+        },
+        "wikiParagraph": {
+          "type": "string",
+          "description": "Paragraph containing bidirectional [[WikiLinks]].",
+          "minLength": 0,
+          "maxLength": 3000
+        },
+        "rawMarkdown": {
+          "type": "string",
+          "description": "Complete canonical Markdown including YAML frontmatter and body.",
+          "minLength": 1,
+          "maxLength": 100000
+        },
+        "status": {
+          "type": "string",
+          "description": "YAML frontmatter lifecycle status.",
+          "enum": ["in-progress", "verified", "draft", "archived"]
+        },
+        "priority": {
+          "type": "string",
+          "description": "YAML frontmatter note priority.",
+          "enum": ["high", "medium", "low"]
+        },
+        "created": {
+          "type": "string",
+          "description": "ISO date string for YAML frontmatter created property.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "tags": {
+          "type": "array",
+          "description": "Bounded list of YAML frontmatter tags (maximum 20).",
+          "maxLength": 20
+        },
+        "bookmarked": {
+          "type": "boolean",
+          "description": "Whether the note is pinned in bookmarks."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "folderId",
+        "filename",
+        "title",
+        "lead",
+        "sectionHeading",
+        "sectionBody",
+        "wikiParagraph",
+        "rawMarkdown",
+        "status",
+        "priority",
+        "created",
+        "tags",
+        "bookmarked",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/vaults/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserVault"
+      },
+      "description": "Per-user root knowledge vault state document."
+    },
+    "/vaults/{userId}/notes/{noteId}": {
+      "schema": {
+        "$ref": "#/entities/VaultNote"
+      },
+      "description": "Per-user subcollection of Markdown notes synced with local storage."
+    }
+  }
+}
